@@ -1,0 +1,681 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>敲鐘程式</title>
+    <style>
+        #big-alarm-button {
+            display: block;
+            width: 100%;
+            font-size: 24px;
+            padding: 15px;
+            background-color: #ffcc00;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: background-color 0.3s ease;
+            margin-bottom: 20px;
+        }
+        #big-alarm-button:hover {
+            background-color: #ff9900;
+        }
+        .date-block {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .date-block h3 {
+            margin: 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .buttons {
+            margin-top: 10px;
+        }
+        .buttons button {
+            margin-right: 5px;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .control-panel {
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            background-color: #218838;
+        }
+
+        .btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+
+        .status.loading {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .data-section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .card {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+
+        .schedule-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .schedule-item:last-child {
+            border-bottom: none;
+        }
+
+        .type {
+            background-color: #007bff;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .pattern-card {
+            background-color: white;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .pattern-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .bell-item {
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .bell-item:last-child {
+            border-bottom: none;
+        }
+
+        .hidden {
+            display: none;
+        }        
+    </style>
+</head>
+<body>
+<button id="big-alarm-button" onclick="playAlarm()">🔔 播放鐘聲</button>
+
+
+<div class="container">
+<div class="control-panel">
+<button id="keepaliveBtn" class="btn">💓 系統狀態檢查</button>
+<button id="loadBtn" class="btn">📥 載入課程資料</button>
+</div>
+<div id="status" class="status hidden"></div>
+
+<div class="status hidden">
+    <label>
+        新增日期：
+        <input type="date" id="new-date" min="">
+    </label>
+    <label>
+        時間 (用","分隔)：
+        <input type="text" id="new-times" placeholder="例如 08:00,14:30">
+    </label>
+    <button onclick="addDate()">新增</button>
+</div>
+<button onclick="clearAllAlarms()">刪除全部鬧鐘</button>
+<div id="date-list"></div>
+
+<div id="dataContainer" class="hidden">
+    <!-- 課程排程 -->
+    <div class="data-section">
+        <h2 class="section-title">📅 課程排程</h2>
+        <div id="courseSchedule">
+        </div>
+    </div>
+    
+    <!-- 課程類型 -->
+    <div class="data-section">
+        <h2 class="section-title">📚 課程類型</h2>
+        <div id="courseTypes"></div>
+    </div>
+    
+    <!-- 每日模式 -->
+    <div class="data-section">
+        <h2 class="section-title">⏰ 每日鐘聲模式</h2>
+        <div id="dailyPatterns" class="pattern-grid"></div>
+    </div>
+    
+    <!-- 鐘聲配置 -->
+    <div class="data-section">
+        <h2 class="section-title">🔊 鐘聲配置</h2>
+        <div id="bellConfig"></div>
+    </div>
+</div>
+
+</div>
+
+<audio id="alarm-sound" src="https://discourses.dhamma.org/oml/recordings/uuid/b9ddfddd-163d-484e-9588-cb34ab524dc2.mp3" preload="auto"></audio>
+
+<script>
+    const dateList = document.getElementById('date-list');
+    const alarmSound = document.getElementById('alarm-sound');
+    let alarms = []; // 存放所有鬧鐘資料
+
+    // 新增鬧鐘
+    function addAlarm(data) {
+        const dates = data.CourseSchedule.map(course => course.startDate);
+
+        dates.forEach(date =>{
+            const times = data.DailyPatterns["1"].map(item => item.time)
+
+            // 確認是否已有該日期，若有則合併時間
+            const existingAlarm = alarms.find(alarm => alarm.date === date);
+            if (existingAlarm) {
+                existingAlarm.times = Array.from(new Set([...existingAlarm.times, ...times])).sort();
+            } else {
+                alarms.push({ date, times: [...new Set(times)].sort() });
+            }            
+        })
+
+        saveAlarmsToLocalStorage();
+        sortAlarms();
+        renderAlarms();
+    }
+
+    // 新增日期和時間
+    function addDate() {
+        const date = document.getElementById('new-date').value;
+        const times = document.getElementById('new-times').value.split(',').map(t => t.trim()).filter(isValidTime);
+        if (!date || times.length === 0 || !isValidDate(date)) {
+            alert('請輸入有效的日期和時間！');
+            return;
+        }
+
+        // 確認是否已有該日期，若有則合併時間
+        const existingAlarm = alarms.find(alarm => alarm.date === date);
+        if (existingAlarm) {
+            existingAlarm.times = Array.from(new Set([...existingAlarm.times, ...times])).sort();
+        } else {
+            alarms.push({ date, times: [...new Set(times)].sort() });
+        }
+
+        saveAlarmsToLocalStorage();
+        sortAlarms();
+        renderAlarms();
+    }
+
+    // 刪除日期
+    function deleteDate(index) {
+        alarms.splice(index, 1);
+
+        saveAlarmsToLocalStorage();
+        renderAlarms();
+    }
+
+    // 修改日期或時間
+    function editDate(index) {
+        const newDate = prompt('修改日期：', alarms[index].date);
+        const newTimes = prompt('修改時間 (用","分隔)：', alarms[index].times.join(','));
+        if (newDate && newTimes) {
+            const times = newTimes.split(',').map(t => t.trim()).filter(isValidTime);
+            if (!isValidDate(newDate) || times.length === 0) {
+                alert('請輸入有效的日期和時間！');
+                return;
+            }
+
+            alarms[index].date = newDate;
+            alarms[index].times = [...new Set(times)].sort();
+            sortAlarms();
+            saveAlarmsToLocalStorage();
+            renderAlarms();
+        }
+    }
+
+    // 複製日期和時間
+    function copyDate(index) {
+        const dateInputs = prompt('輸入要複製到的日期 (例：2025-04-01,2025-04-24，用","分隔)：').split(',').map(d => d.trim());
+        const validDates = dateInputs.filter(isValidDate);
+
+        if (validDates.length === 0) {
+            alert('請輸入至少一個有效的日期！');
+            return;
+        }
+
+        validDates.forEach(newDate => {
+            const existingAlarm = alarms.find(alarm => alarm.date === newDate);
+            if (existingAlarm) {
+                // 合併時間
+                existingAlarm.times = Array.from(new Set([...existingAlarm.times, ...alarms[index].times])).sort();
+            } else {
+                alarms.push({ date: newDate, times: [...alarms[index].times] });
+            }
+        });
+
+        sortAlarms();
+        saveAlarmsToLocalStorage();
+        renderAlarms();
+    }
+
+    // 檢查有效日期
+    function isValidDate(date) {
+        const parsedDate = new Date(date);
+        return !isNaN(parsedDate) && date === parsedDate.toISOString().split('T')[0];
+    }
+
+    // 檢查有效時間
+    function isValidTime(time) {
+        const timeParts = time.split(':');
+        if (timeParts.length !== 2) return false;
+        const [hour, minute] = timeParts.map(Number);
+        return hour >= 0 && hour < 24 && minute >= 0 && minute < 60;
+    }
+
+    // 對日期和時間排序
+    function sortAlarms() {
+        // 依日期升冪排列
+        alarms.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        // 每個日期內的時間也升冪排列
+        alarms.forEach(alarm => {
+            alarm.times.sort((a, b) => {
+                const [ha, ma] = a.split(':').map(Number);
+                const [hb, mb] = b.split(':').map(Number);
+                return ha !== hb ? ha - hb : ma - mb;
+            });
+        });
+    }
+
+    // 渲染鬧鐘列表
+    function renderAlarms() {
+        dateList.innerHTML = '';
+        const today = new Date().toISOString().split('T')[0];
+
+        alarms
+        <!-- .filter(alarm => alarm.date >= today) // 🔹只保留今天和未來的日期 -->
+        .forEach((alarm, index) => {
+            const block = document.createElement('div');
+            block.className = 'date-block';
+
+            block.innerHTML = `
+                <h3>${alarm.date}
+                    <div class="hidden">
+                        <button onclick="deleteDate(${index})">刪除</button>
+                        <button onclick="editDate(${index})">修改</button>
+                        <button onclick="copyDate(${index})">複製</button>
+                    </div>
+                </h3>
+                <p>🔔 ${alarm.times.join(', ')}</p>
+            `;
+            dateList.appendChild(block);
+        });
+    }
+
+    // 時間檢查器
+    setInterval(() => {
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        alarms.forEach(alarm => {
+            if (alarm.date === now.toISOString().split('T')[0] && alarm.times.includes(currentTime)) {
+                alarmSound.play();
+                // alert(`時間到了！日期：${alarm.date} 時間：${currentTime}`);
+            }
+        });
+    }, 1000); // 每分鐘檢查
+  function playAlarm() {
+    alarmSound.currentTime = 0; // 從頭開始播放
+    alarmSound.play();
+}
+
+// 儲存至 localStorage
+function saveAlarmsToLocalStorage() {
+  localStorage.setItem('alarms', JSON.stringify(alarms));
+}
+
+// 從 localStorage 載入
+function loadAlarmsFromLocalStorage() {
+  const stored = localStorage.getItem('alarms');
+  if (stored) {
+      try {
+          alarms = JSON.parse(stored);
+      } catch (e) {
+          console.error('資料載入錯誤', e);
+          alarms = [];
+      }
+  }
+}
+
+// 設定日期輸入欄位的最小值為今天
+document.addEventListener('DOMContentLoaded', () => {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('new-date').setAttribute('min', today);
+});
+
+function clearAllAlarms() {
+    if (confirm('確定要刪除所有鬧鐘嗎？此操作無法復原。')) {
+        alarms = [];
+        localStorage.removeItem('alarms');
+        renderAlarms();
+    }
+}
+
+
+
+class BellSchedulerUI {
+    constructor() {
+        // 在 Google Apps Script 環境中，使用當前頁面的 URL 作為 API 基礎
+        this.apiUrl = window.location.href.split('?')[0];
+        this.initEventListeners();
+    }
+
+    initEventListeners() {
+        document.getElementById('keepaliveBtn').addEventListener('click', () => this.checkSystemStatus());
+        document.getElementById('loadBtn').addEventListener('click', () => this.loadCourseData());
+    }
+
+    showStatus(message, type = 'loading') {
+        const statusEl = document.getElementById('status');
+        statusEl.textContent = message;
+        statusEl.className = `status ${type}`;
+        statusEl.classList.remove('hidden');
+    }
+
+    hideStatus() {
+        document.getElementById('status').classList.add('hidden');
+    }
+
+    // 專門處理 Google Apps Script API 呼叫的方法
+    async callGoogleAppsScriptAPI(path) {
+        return new Promise((resolve, reject) => {
+            // 在 Google Apps Script 環境中，我們可以使用 google.script.run
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                // 使用 Google Apps Script 的內建 API
+                switch(path) {
+                    case 'course':
+                        google.script.run
+                            .withSuccessHandler(resolve)
+                            .withFailureHandler(reject)
+                            .exportBellScheduleJSON();
+                        break;
+                    case 'keepalive':
+                        google.script.run
+                            .withSuccessHandler(resolve)
+                            .withFailureHandler(reject)
+                            .getKeepAliveData();
+                        break;
+                    default:
+                        reject(new Error('未知的 API 路徑'));
+                }
+            } else {
+                // 如果不在 Google Apps Script 環境中，使用傳統的 fetch
+                this.callAPIWithFetch(path).then(resolve).catch(reject);
+            }
+        });
+    }
+
+    // 傳統的 fetch API 呼叫方法（作為備用）
+    async callAPIWithFetch(path) {
+        const apiUrl = `${this.apiUrl}?path=${path}`;
+        
+        const response = await fetch(apiUrl);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const responseText = await response.text();
+        
+        // 嘗試從 HTML 回應中提取 JSON
+        let jsonMatch = responseText.match(/\{[^{}]*\}/g);
+        if (jsonMatch && jsonMatch.length > 0) {
+            // 找到最大的 JSON 字串（可能是我們要的資料）
+            let largestJson = jsonMatch.reduce((a, b) => a.length > b.length ? a : b);
+            try {
+                return JSON.parse(largestJson);
+            } catch (e) {
+                // 靜默處理解析錯誤
+            }
+        }
+        
+        // 如果找不到 JSON，嘗試直接解析
+        try {
+            return JSON.parse(responseText);
+        } catch (e) {
+            throw new Error('無法從伺服器回應中解析 JSON 資料');
+        }
+    }
+
+    async checkSystemStatus() {
+        try {
+            this.showStatus('💓 正在檢查系統狀態...', 'loading');
+            
+            // 呼叫 keepalive API 獲取系統狀態
+            const data = await this.callGoogleAppsScriptAPI('keepalive');
+            
+            if (data.status === 'OK') {
+                let statusMessage = '✅ 系統運作正常';
+                if (data.config) {
+                    const intervals = [];
+                    if (data.config.KeepAliveInterval) {
+                        intervals.push(`Keep-Alive: ${data.config.KeepAliveInterval}分鐘`);
+                    }
+                    if (data.config.UpdateCourseInterval) {
+                        intervals.push(`更新間隔: ${data.config.UpdateCourseInterval}分鐘`);
+                    }
+                    if (intervals.length > 0) {
+                        statusMessage += ` (${intervals.join(', ')})`;
+                    }
+                }
+                this.showStatus(statusMessage, 'success');
+            } else {
+                this.showStatus('⚠️ 系統狀態異常', 'error');
+            }
+            
+            setTimeout(() => this.hideStatus(), 5000);
+            
+        } catch (error) {
+            this.showStatus(`❌ 系統狀態檢查失敗: ${error.message}`, 'error');
+        }
+    }
+
+    async loadCourseData() {
+        try {
+            this.showStatus('🔄 正在載入課程資料...', 'loading');
+            
+            // 使用 Google Apps Script 的特殊方式呼叫 API
+            const data = await this.callGoogleAppsScriptAPI('course');
+            
+            this.displayData(data);
+            this.updateAlarmData(data);
+
+            this.showStatus('✅ 資料載入成功！', 'success');
+            
+            setTimeout(() => this.hideStatus(), 3000);
+            
+        } catch (error) {
+            this.showStatus(`❌ 載入失敗: ${error.message}`, 'error');
+        }
+    }
+
+    displayData(data) {
+        document.getElementById('dataContainer').classList.remove('hidden');
+        
+        this.displayCourseSchedule(data.CourseSchedule || []);
+        this.displayCourseTypes(data.CourseTypes || {});
+        this.displayDailyPatterns(data.DailyPatterns || {});
+        this.displayBellConfig(data.BellConfig || {});
+    }
+
+    updateAlarmData(data) {
+        console.log(data);
+        addAlarm(data);
+
+        saveAlarmsToLocalStorage();
+        sortAlarms();
+        renderAlarms();
+    }
+
+    displayCourseSchedule(schedule) {
+        const container = document.getElementById('courseSchedule');
+        
+        if (schedule.length === 0) {
+            container.innerHTML = '<p style="color: #666; font-style: italic;">目前沒有課程排程資料</p>';
+            return;
+        }
+        
+        const html = schedule.map(item => `
+            <div class="schedule-item">
+                <span class="date">📅 ${item.startDate}</span>
+                <span class="type">${item.type}</span>
+            </div>
+        `).join('');
+        
+        container.innerHTML = html;
+    }
+
+    displayCourseTypes(types) {
+        const container = document.getElementById('courseTypes');
+        
+        if (Object.keys(types).length === 0) {
+            container.innerHTML = '<div class="card"><p style="color: #666; font-style: italic;">目前沒有課程類型資料</p></div>';
+            return;
+        }
+        
+        const html = Object.entries(types).map(([typeName, patterns]) => `
+            <div class="card">
+                <h3 style="color: #667eea; margin-bottom: 15px;">📚 ${typeName}</h3>
+                ${patterns.map(pattern => `
+                    <div class="schedule-item">
+                        <span class="date">第 ${pattern.day} 天</span>
+                        <span class="type">${pattern.pattern}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `).join('');
+        
+        container.innerHTML = html;
+    }
+
+    displayDailyPatterns(patterns) {
+        const container = document.getElementById('dailyPatterns');
+        
+        if (Object.keys(patterns).length === 0) {
+            container.innerHTML = '<div class="pattern-card"><p style="color: #666; font-style: italic;">目前沒有每日模式資料</p></div>';
+            return;
+        }
+        
+        const html = Object.entries(patterns).map(([patternName, bells]) => `
+            <div class="pattern-card">
+                <div class="pattern-title">⏰ ${patternName}</div>
+                ${bells.map(bell => `
+                    <div class="bell-item">
+                        <span class="time">${bell.time}</span>
+                        <span class="bell">🔔 ${bell.bellType}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `).join('');
+        
+        container.innerHTML = html;
+    }
+
+    displayBellConfig(config) {
+        const container = document.getElementById('bellConfig');
+        
+        if (Object.keys(config).length === 0) {
+            container.innerHTML = '<div class="card"><p style="color: #666; font-style: italic;">目前沒有鐘聲配置資料</p></div>';
+            return;
+        }
+        
+        const html = Object.entries(config).map(([bellType, audioUrl]) => `
+            <div class="card">
+                <div class="schedule-item">
+                    <span class="date">🔔 ${bellType}</span>
+                    <span class="type">
+                        <a href="${audioUrl}" target="_blank" style="color: #667eea; text-decoration: none;">
+                            🎧 音效連結
+                        </a>
+                    </span>
+                </div>
+            </div>
+        `).join('');
+        
+        container.innerHTML = html;
+    }
+}
+
+// 初始化應用程式
+document.addEventListener('DOMContentLoaded', () => {
+    new BellSchedulerUI();
+});
+
+
+loadAlarmsFromLocalStorage();
+renderAlarms();
+
+
+</script>
+</body>
+</html>
