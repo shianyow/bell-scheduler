@@ -281,11 +281,6 @@
     alarmSound.play();
 }
 
-// 設定日期輸入欄位的最小值為今天
-document.addEventListener('DOMContentLoaded', () => {
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('new-date').setAttribute('min', today);
-});
 
 function deletePastAlarms() {
     const today = new Date().toISOString().split('T')[0];
