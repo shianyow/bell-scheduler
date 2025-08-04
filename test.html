@@ -220,13 +220,23 @@
                             case 'course':
                                 google.script.run
                                     .withSuccessHandler(resolve)
-                                    .withFailureHandler(reject)
+                                    .withFailureHandler((error) => {
+                                        // 處理 Google Apps Script 錯誤
+                                        const errorMessage = error && error.message ? error.message : 
+                                                           (typeof error === 'string' ? error : '網路連線失敗，請檢查網路連線狀態');
+                                        reject(new Error(errorMessage));
+                                    })
                                     .exportBellScheduleJSON();
                                 break;
                             case 'keepalive':
                                 google.script.run
                                     .withSuccessHandler(resolve)
-                                    .withFailureHandler(reject)
+                                    .withFailureHandler((error) => {
+                                        // 處理 Google Apps Script 錯誤
+                                        const errorMessage = error && error.message ? error.message : 
+                                                           (typeof error === 'string' ? error : '網路連線失敗，請檢查網路連線狀態');
+                                        reject(new Error(errorMessage));
+                                    })
                                     .getKeepAliveData();
                                 break;
                             default:
@@ -243,31 +253,40 @@
             async callAPIWithFetch(path) {
                 const apiUrl = `${this.apiUrl}?path=${path}`;
                 
-                const response = await fetch(apiUrl);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const responseText = await response.text();
-                
-                // 嘗試從 HTML 回應中提取 JSON
-                let jsonMatch = responseText.match(/\{[^{}]*\}/g);
-                if (jsonMatch && jsonMatch.length > 0) {
-                    // 找到最大的 JSON 字串（可能是我們要的資料）
-                    let largestJson = jsonMatch.reduce((a, b) => a.length > b.length ? a : b);
-                    try {
-                        return JSON.parse(largestJson);
-                    } catch (e) {
-                        // 靜默處理解析錯誤
-                    }
-                }
-                
-                // 如果找不到 JSON，嘗試直接解析
                 try {
-                    return JSON.parse(responseText);
-                } catch (e) {
-                    throw new Error('無法從伺服器回應中解析 JSON 資料');
+                    const response = await fetch(apiUrl);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const responseText = await response.text();
+                    
+                    // 嘗試從 HTML 回應中提取 JSON
+                    let jsonMatch = responseText.match(/\{[^{}]*\}/g);
+                    if (jsonMatch && jsonMatch.length > 0) {
+                        // 找到最大的 JSON 字串（可能是我們要的資料）
+                        let largestJson = jsonMatch.reduce((a, b) => a.length > b.length ? a : b);
+                        try {
+                            return JSON.parse(largestJson);
+                        } catch (e) {
+                            // 靜默處理解析錯誤
+                        }
+                    }
+                    
+                    // 如果找不到 JSON，嘗試直接解析
+                    try {
+                        return JSON.parse(responseText);
+                    } catch (e) {
+                        throw new Error('無法從伺服器回應中解析 JSON 資料');
+                    }
+                } catch (error) {
+                    // 處理網路連線錯誤
+                    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                        throw new Error('網路連線失敗，請檢查網路連線狀態');
+                    } else {
+                        throw error;
+                    }
                 }
             }
 
