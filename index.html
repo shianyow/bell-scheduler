@@ -6,25 +6,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dhamma Gong</title>
     <style>
-        #big-alarm-button {
-            display: block;
+        .play-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
             width: 100%;
-            height: 40vh;
-            font-size: 24px;
-            padding: 15px;
-            background-color: #ffcc00;
+            height: 30vh;
+            background-color: #707070;
             border: none;
-            border-radius: 8px;
+            border-radius: 50px;
             cursor: pointer;
-            margin-top: 20px;
-            font-weight: bold;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             transition: background-color 0.3s ease;
-            margin-bottom: 20px;
+            color: white;
+            font-size: 5vh;
+            font-weight: bold;
+            margin-bottom: 10px;
+          }
+      
+  
+      
+          .play-button:hover {
+            background-color: #212121;
+          }
+
+          .play-button.flash {
+            animation: flash-bg 3s ease-in-out infinite;
         }
-        #big-alarm-button:hover {
-            background-color: #ff9900;
+        
+        @keyframes flash-bg {
+            0% { background-color: #707070; }
+            50% { background-color: #212121; }
+            100% { background-color: #707070; }
         }
+        
+          .play-icon {
+            width: 0;
+            height: 0;
+            border-top: 5vh solid transparent;
+            border-bottom: 5vh solid transparent;
+            border-left: 8vh solid white;
+          }
+      
+          .play-text {
+            flex-grow: 1;
+          }
+
         .date-block {
             border: 1px solid #ccc;
             padding: 10px;
@@ -154,14 +180,20 @@
     </style>
 </head>
 <body>
-<button id="big-alarm-button" onclick="playAlarm()"> 🔊 Play Gong ▶️</button>
+<button class="play-button" onclick="playAlarm()">
+    <div class="play-text">點此手動敲鐘<br/>▶️</div>
+</button>
 
 <div class="container">
 <div class="control-panel">
 <button id="keepaliveBtn" class="btn hidden">💓 Check</button>
 <button id="loadBtn" class="btn hidden">📥 Load</button>
 </div>
+<div id="audio-error" class="status error hidden"></div>
 <div id="status" class="status hidden"></div>
+<div id="audio-unlock" class="status info">
+    請點擊畫面以啟用鐘聲🔓
+</div>
 
 <div id="date-list"></div>
 
@@ -177,6 +209,9 @@
 <script>
     const dateList = document.getElementById('date-list');
     const alarmSound = document.getElementById('alarm-sound');
+    alarmSound.muted = false;
+    alarmSound.volume = 1.0;
+
     let alarms = []; // 存放所有鬧鐘資料
 
     // 新增鬧鐘
@@ -200,6 +235,7 @@
 
         })
 
+        deletePastAlarms();
         sortAlarms();
         renderAlarms();
     }
@@ -222,20 +258,29 @@
       
       
 
-    // 對日期和時間排序
-    function sortAlarms() {
-        // 依日期升冪排列
-        alarms.sort((a, b) => new Date(a.date) - new Date(b.date));
+function showAudioError(msg) {
+    const errDiv = document.getElementById('audio-error');
+    errDiv.textContent = msg;
+    errDiv.classList.remove('hidden');
+}
+function hideAudioError() {
+    const errDiv = document.getElementById('audio-error');
+    errDiv.textContent = '';
+    errDiv.classList.add('hidden');
+}
+// 依日期升冪排列
+function sortAlarms() {
+    alarms.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        // 每個日期內的時間也升冪排列
-        alarms.forEach(alarm => {
-            alarm.times.sort((a, b) => {
-                const [ha, ma] = a.split(':').map(Number);
-                const [hb, mb] = b.split(':').map(Number);
-                return ha !== hb ? ha - hb : ma - mb;
-            });
+    // 每個日期內的時間也升冪排列
+    alarms.forEach(alarm => {
+        alarm.times.sort((a, b) => {
+            const [ha, ma] = a.split(':').map(Number);
+            const [hb, mb] = b.split(':').map(Number);
+            return ha !== hb ? ha - hb : ma - mb;
         });
-    }
+    });
+}
 
     // 渲染鬧鐘列表
     function renderAlarms() {
@@ -262,23 +307,84 @@
         });
     }
 
-    // 時間檢查器
-    setInterval(() => {
+
+
+
+    function runEveryMinuteAtZeroSecond() {
         const now = new Date();
-        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        alarms.forEach(alarm => {
-            if (alarm.date === now.toISOString().split('T')[0] && alarm.times.includes(currentTime)) {
-                alarmSound.play();
-                // alert(`時間到了！日期：${alarm.date} 時間：${currentTime}`);
-            }
-        });
-    }, 1000); // 每分鐘檢查
+        const next = new Date(now);
+
+        next.setSeconds(0);
+        next.setMilliseconds(0);
+        next.setMinutes(now.getMinutes() + 1); // 下一分鐘的 0 秒
+      
+        const delay = next - now; // 剩餘時間（毫秒）
+      
+        setTimeout(() => {
+          const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()+1).padStart(2, '0')}`;
 
 
+          // ✅ 在每分鐘的 0 秒執行這段
+          console.log("⏰ 每分鐘的第 0 秒執行任務", new Date().toLocaleTimeString());
+          if (alarms && alarms[0].date === now.toISOString().split('T')[0] && alarms[0].times.includes(currentTime)) {
+            alarmSound.play()
+              .then(() => {
+                hideAudioError();
+              })
+              .catch((err) => {
+                showAudioError("自動播放失敗：" + (err && err.message ? err.message : err));
+              });
+            playVisualAlarm();
+        }
+          // 做完後再安排下一次
+          runEveryMinuteAtZeroSecond();
+        }, delay);
+      }
+      
+      runEveryMinuteAtZeroSecond();
+      
+
+    function scheduleMidnightTask() {
+        const now = new Date();
+        const nextMidnight = new Date();
+      
+        nextMidnight.setDate(now.getDate() + 1); // 明天
+        nextMidnight.setHours(0, 0, 0, 0); // 設為 00:00:00.000
+      
+        const timeUntilMidnight = nextMidnight - now;
+      
+        setTimeout(() => {
+          // ✅ 在 0:00 執行你的任務
+          console.log("🕛 每日午夜任務執行！");
+          deletePastAlarms();
+                
+          // 然後再次排程明天的 0:00
+          scheduleMidnightTask();
+        }, timeUntilMidnight);
+      }
+      
+      scheduleMidnightTask();
 
   function playAlarm() {
     alarmSound.currentTime = 0; // 從頭開始播放
-    alarmSound.play();
+    alarmSound.play().then(() => {
+      hideAudioError();
+    }).catch(function(e){
+      showAudioError('鈴聲播放失敗：' + (e && e.message ? e.message : e));
+    });
+    playVisualAlarm();
+}
+
+function playVisualAlarm() {
+    const playButton = document.querySelector('.play-button');
+
+    // 加入動畫 class
+    playButton.classList.add('flash');
+
+    // 幾秒後移除 class（例如3秒後停止閃動）
+    setTimeout(() => {
+        playButton.classList.remove('flash');
+    }, 60000);
 }
 
 
@@ -425,9 +531,10 @@ class BellSchedulerUI {
                     localStorage.setItem('lastDataChange', JSON.stringify(data.lastDataChange));
                 }
 
-                // if (data.systemConfig && data.systemConfig.KeepAliveInterval) {
-                //    statusMessage += ` (Keep-Alive: ${data.systemConfig.KeepAliveInterval}分鐘)`;
-                //}
+                if (data.systemConfig && data.systemConfig.KeepAliveInterval) {
+                    // statusMessage += ` (Keep-Alive: ${data.systemConfig.KeepAliveInterval}分鐘)`;
+                    localStorage.setItem('keepAliveInterval', JSON.stringify(data.systemConfig.KeepAliveInterval));
+                }
                 const statusBox = document.getElementById('status');
                 statusBox.innerHTML = `<div class="alert alert-success"><i class="fas fa-check-circle"></i> ${statusMessage}</div>`;
             } else {
@@ -446,16 +553,16 @@ class BellSchedulerUI {
         try {
             localStorage.removeItem('alarms');
 
-            this.showStatus('🔄 Loading...', 'loading');
+            // this.showStatus('🔄 Loading...', 'loading');
             
             // 使用 Google Apps Script 的特殊方式呼叫 API
             const data = await this.callGoogleAppsScriptAPI('course');
             
             this.updateAlarmData(data);
 
-            this.showStatus('✅', 'success');
+            // this.showStatus('✅', 'success');
             
-            setTimeout(() => this.hideStatus(), 3000);
+            // setTimeout(() => this.hideStatus(), 3000);
 
             
         } catch (error) {
@@ -465,7 +572,6 @@ class BellSchedulerUI {
 
     updateAlarmData(data) {
         syncAlarm(data);
-
         sortAlarms();
         renderAlarms();
     }
@@ -475,17 +581,57 @@ class BellSchedulerUI {
 document.addEventListener('DOMContentLoaded', () => {
     // new BellSchedulerUI();
     const bellApp = new BellSchedulerUI();
+    bellApp.checkSystemStatus();
+    const keepAliveInterval = localStorage.getItem('keepAliveInterval') || 0.5;
+    console.log(keepAliveInterval)
 
-    // 時間檢查器5分鐘
+    // 連線檢查器
     setInterval(() => {
         bellApp.checkSystemStatus();
-    }, 300000); // 10000 毫秒 = 10 秒
+    }, keepAliveInterval*60000);
+
 });
 
 
 renderAlarms();
-deletePastAlarms();
 
 </script>
+  <script>
+    // ===== 音訊解鎖提示與狀態 (全域) =====
+    const audioUnlockDiv = document.getElementById('audio-unlock');
+    let audioUnlocked = false;
+
+    function showAudioUnlockMsg(msg) {
+      audioUnlockDiv.textContent = msg;
+      audioUnlockDiv.classList.remove('hidden');
+    }
+
+    function hideAudioUnlockMsg() {
+      audioUnlockDiv.classList.add('hidden');
+    }
+
+    function unlockAudio() {
+      if (audioUnlocked) return;
+      const alarmSound = document.getElementById('alarm-sound');
+      alarmSound.muted = true;
+      alarmSound.play()
+        .then(() => {
+          alarmSound.pause();
+          alarmSound.currentTime = 0;
+          alarmSound.muted = false;
+          audioUnlocked = true;
+          showAudioUnlockMsg('音訊已解鎖！🔊');
+          setTimeout(hideAudioUnlockMsg, 1500);
+        })
+        .catch(() => {
+          showAudioUnlockMsg('請點擊畫面以啟用鐘聲🔓');
+        });
+    }
+
+    window.addEventListener('touchstart', unlockAudio, { once: true });
+    window.addEventListener('click', unlockAudio, { once: true });
+    showAudioUnlockMsg('請點擊畫面以啟用鐘聲🔓');
+    // ===============================
+  </script>
 </body>
 </html>
