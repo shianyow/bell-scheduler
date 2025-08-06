@@ -48,16 +48,24 @@ bell-scheduler/
 | BellType | 鐘聲類型 | 1 |
 
 #### 4. **SystemConfig** 工作表
-| 設定名稱 | 設定值 | 說明 |
-|---------|--------|------|
-| `KeepAliveInterval` | `5` | 前端 keep-alive 間隔（分鐘） |
-| `NotifyEmail` | `admin@example.com` | 離線通知收件人 email |
+| Key              | Value                      | Note                                   |
+|------------------|---------------------------|----------------------------------------|
+| KeepAliveInterval| 5                         | keep-alive interval in minutes         |
+| NotifyEnabled    | TRUE                      | 設為 TRUE 啟用離線通知                 |
+| NotifyEmail      | admin@example.com, ...   | 一或多個 email，以逗號分隔             |
+
+- **KeepAliveInterval**：前端 keep-alive 檢查的間隔（單位：分鐘）。
+- **NotifyEnabled**：設為 TRUE 時啟用 email 離線通知。
+- **NotifyEmail**：通知收件人清單，可填一個或多個 email，使用 `,` 分隔。
 
 #### 5. **BellConfig** 工作表
-| 欄位 | 說明 | 範例 |
-|------|------|------|
-| BellType | 鐘聲類型 | 1 |
-| AudioURL | 音效檔案連結 | https://example.com/bell1.mp3 |
+| 欄位      | 說明         | 範例 |
+|-----------|--------------|------|
+| BellType  | 鐘聲類型     | 1    |
+| Repeat    | 重複敲擊次數 | 4    |
+
+- **BellType**：對應 DailyPattern_* 工作表裡的 BellType 欄位，用來區分不同鐘聲類型。
+- **Repeat**：每次響鈴時重複敲擊的次數，例如 Repeat=4 代表該鐘聲會連續響 4 下。
 
 ## 🚀 部署指南
 
@@ -111,12 +119,17 @@ bell-scheduler/
 
 ### 📧 離線通知設定
 
-#### 1. 設定收件人
-在 **SystemConfig** 工作表中新增：
-```
-設定名稱: NotifyEmail
-設定值: your-email@example.com
-```
+#### 1. 設定收件人與通知開關
+在 **SystemConfig** 工作表中設定：
+
+| Key           | Value                       | Note                           |
+|---------------|----------------------------|--------------------------------|
+| NotifyEnabled | TRUE                       | 設為 TRUE 啟用離線通知         |
+| NotifyEmail   | admin@example.com, ... | 多個 email 以逗號分隔         |
+
+- **NotifyEnabled** 設為 TRUE 時才會發送 email 通知。
+- **NotifyEmail** 可填一個或多個收件人，請用英文逗號 `,` 分隔。
+
 
 #### 2. 設定觸發器
 1. 在 Google Apps Script 編輯器中，點擊左側「觸發器」
