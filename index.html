@@ -355,21 +355,14 @@ function sortAlarms() {
     // 渲染鬧鐘列表
     function renderAlarms() {
         dateList.innerHTML = '';
-        const today = new Date().toISOString().split('T')[0];
 
         alarms
-        .filter(alarm => alarm.date >= today) // 🔹只保留今天和未來的日期
         .forEach((alarm, index) => {
             const block = document.createElement('div');
             block.className = 'date-block';
 
             block.innerHTML = `
                 <h3>${alarm.date}
-                    <div class="">
-                        <button class="hidden" onclick="deleteDate(${index})">刪除</button>
-                        <button class="hidden" onclick="editDate(${index})">修改</button>
-                        <button class="hidden" onclick="copyDate(${index})">複製</button>
-                    </div>
                 </h3>
                 <p>🔔 ${alarm.times.join(', ')}</p>
             `;
@@ -396,7 +389,7 @@ function sortAlarms() {
 
           // ✅ 在每分鐘的 0 秒執行這段
           console.log("⏰ 每分鐘的第 0 秒執行任務", new Date().toLocaleTimeString());
-          if (alarms && alarms[0].date === now.toISOString().split('T')[0] && alarms[0].times.includes(currentTime)) {
+          if (alarms && alarms[0].date === getTodayDateFormatted() && alarms[0].times.includes(currentTime)) {
         const bellType = alarms[0].bellTypes[currentTime] || 1;
         const repeatTimes = bellConfig[bellType] || 1;
             playAlarmTimes(repeatTimes);
@@ -509,7 +502,7 @@ function updatePlayButton(isPlaying = false) {
 }
 
 function deletePastAlarms() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayDateFormatted();
     const originalCount = alarms.length;
 
     alarms = alarms.filter(alarm => alarm.date >= today);
@@ -518,8 +511,6 @@ function deletePastAlarms() {
         renderAlarms();
     }
 }
-
-
 
 class BellSchedulerUI {
     constructor() {
@@ -711,6 +702,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
+function getTodayDateFormatted() {
+  const today = new Date();
+
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0'); // 月份從 0 開始
+  const day = String(today.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
 
 renderAlarms();
 
