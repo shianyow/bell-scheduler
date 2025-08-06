@@ -14,7 +14,7 @@ function doGet(e) {
       return HtmlService.createHtmlOutputFromFile('test');
     case undefined:
       // 若無 path，預設回傳管理介面
-      return HtmlService.createHtmlOutputFromFile('index');
+      return HtmlService.createTemplateFromFile('index').evaluate();
     default:
       response = ContentService.createTextOutput(
         JSON.stringify({ error: "Unknown path" })
@@ -23,4 +23,9 @@ function doGet(e) {
   }
 
   return response;
+}
+
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename)
+      .getContent();
 }
