@@ -1,219 +1,232 @@
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dhamma Gong</title>
-    <style>
-        .play-button {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 30vh;
-            background-color: #707070;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            color: white;
-            font-size: 5vh;
-            font-weight: bold;
-            margin-bottom: 10px;
-          }
-      
-  
-      
-          .play-button:hover {
-            background-color: #212121;
-          }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dhamma Gong</title>
+  <style>
+    .play-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 30vh;
+      background-color: #707070;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      color: white;
+      font-size: 5vh;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
 
-          .play-button.flash {
-            animation: flash-bg 3s ease-in-out infinite;
-        }
-        
-        @keyframes flash-bg {
-            0% { background-color: #707070; }
-            50% { background-color: #212121; }
-            100% { background-color: #707070; }
-        }
-        
-          .play-icon {
-            width: 0;
-            height: 0;
-            border-top: 5vh solid transparent;
-            border-bottom: 5vh solid transparent;
-            border-left: 8vh solid white;
-          }
-      
-          .play-text {
-            flex-grow: 1;
-          }
 
-        .date-block {
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-        .date-block h3 {
-            margin: 0;
-            display: flex;
-            justify-content: space-between;
-        }
-        .buttons {
-            margin-top: 10px;
-        }
-        .buttons button {
-            margin-right: 5px;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f5f5f5;
-        }
-        
-        .container {
-            max-width: 100%;
-            margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
 
-        .control-panel {
-            margin-bottom: 20px;
-        }
+    .play-button:hover {
+      background-color: #212121;
+    }
 
-        .btn {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            margin: 5px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
+    .play-button.flash {
+      animation: flash-bg 3s ease-in-out infinite;
+    }
 
-        .btn:hover {
-            background-color: #218838;
-        }
+    @keyframes flash-bg {
+      0% {
+        background-color: #707070;
+      }
 
-        .btn:disabled {
-            background-color: #6c757d;
-            cursor: not-allowed;
-        }
+      50% {
+        background-color: #212121;
+      }
 
-        .status {
-            padding: 10px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-        }
+      100% {
+        background-color: #707070;
+      }
+    }
 
-        .status.loading {
-            background-color: #d1ecf1;
-            color: #0c5460;
-        }
+    .play-icon {
+      width: 0;
+      height: 0;
+      border-top: 5vh solid transparent;
+      border-bottom: 5vh solid transparent;
+      border-left: 8vh solid white;
+    }
 
-        .status.success {
-            background-color: #d4edda;
-            color: #155724;
-        }
+    .play-text {
+      flex-grow: 1;
+    }
 
-        .status.error {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
+    .date-block {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
 
-        .card {
-            background-color: #f8f9fa;
-            padding: 15px;
-            margin-bottom: 10px;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-        }
+    .date-block h3 {
+      margin: 0;
+      display: flex;
+      justify-content: space-between;
+    }
 
-        .schedule-item {
-            padding: 8px 0;
-            border-bottom: 1px solid #eee;
-        }
+    .buttons {
+      margin-top: 10px;
+    }
 
-        .schedule-item:last-child {
-            border-bottom: none;
-        }
+    .buttons button {
+      margin-right: 5px;
+    }
 
-        .type {
-            background-color: #007bff;
-            color: white;
-            padding: 3px 8px;
-            border-radius: 3px;
-            font-size: 12px;
-        }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+    }
 
-        .pattern-card {
-            background-color: white;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
 
-        .pattern-title {
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
+    .control-panel {
+      margin-bottom: 20px;
+    }
 
-        .bell-item {
-            padding: 5px 0;
-            border-bottom: 1px solid #f0f0f0;
-        }
+    .btn {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
 
-        .bell-item:last-child {
-            border-bottom: none;
-        }
+    .btn:hover {
+      background-color: #218838;
+    }
 
-        .hidden {
-            display: none;
-        }        
-    </style>
+    .btn:disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+    }
+
+    .status {
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+    }
+
+    .status.loading {
+      background-color: #d1ecf1;
+      color: #0c5460;
+    }
+
+    .status.success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    .status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    .card {
+      background-color: #f8f9fa;
+      padding: 15px;
+      margin-bottom: 10px;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+    }
+
+    .schedule-item {
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .schedule-item:last-child {
+      border-bottom: none;
+    }
+
+    .type {
+      background-color: #007bff;
+      color: white;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+
+    .pattern-card {
+      background-color: white;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    .pattern-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .bell-item {
+      padding: 5px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .bell-item:last-child {
+      border-bottom: none;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
 </head>
+
 <body>
-<button class="play-button" onclick="playAlarm()">
-    <div class="play-text">點此手動敲鐘<br/>▶️</div>
-</button>
+  <button class="play-button" onclick="playAlarm()">
+    <div class="play-text">點此手動敲鐘<br />▶️</div>
+  </button>
 
-<div class="container">
-<div class="control-panel">
-<button id="keepaliveBtn" class="btn hidden">💓 Check</button>
-<button id="loadBtn" class="btn hidden">📥 Load</button>
-</div>
-<div id="audio-error" class="status error hidden"></div>
-<div id="status" class="status hidden"></div>
-<div id="audio-unlock" class="status info">
-    請點擊畫面以啟用鐘聲🔓
-</div>
+  <div class="container">
+    <div class="control-panel">
+      <button id="keepaliveBtn" class="btn hidden">💓 Check</button>
+      <button id="loadBtn" class="btn hidden">📥 Load</button>
+    </div>
+    <div id="audio-error" class="status error hidden"></div>
+    <div id="status" class="status hidden"></div>
+    <div id="audio-unlock" class="status info">
+      請點擊畫面以啟用鐘聲🔓
+    </div>
 
-<div id="date-list"></div>
+    <div id="date-list"></div>
 
 
-</div>
+  </div>
 
-<!-- <audio id="alarm-sound" src="https://discourses.dhamma.org/oml/recordings/uuid/b9ddfddd-163d-484e-9588-cb34ab524dc2.mp3" preload="auto"></audio> -->
-<audio id="alarm-sound" type="audio/mp3" preload="auto">
+  <!-- <audio id="alarm-sound" src="https://discourses.dhamma.org/oml/recordings/uuid/b9ddfddd-163d-484e-9588-cb34ab524dc2.mp3" preload="auto"></audio> -->
+  <audio id="alarm-sound" type="audio/mp3" preload="auto">
     <source src="">
-</audio>
+  </audio>
 
-<script>
+  <script>
     // Load bell sound 
     <?!= include('belljs') ?>
 
     const alarmSound = document.getElementById('alarm-sound');
     let source = alarmSound.querySelector('source');
     if (!source) {
-        source = document.createElement('source');
-        alarmSound.appendChild(source);
+      source = document.createElement('source');
+      alarmSound.appendChild(source);
     }
     source.src = BELL_BASE64;
     alarmSound.load();
@@ -265,456 +278,453 @@
 
     // 新增鬧鐘
     function syncAlarm(data) {
-    // 讀取 BellConfig (BellType -> Repeat)
-    if (Array.isArray(data.BellConfig)) {
+      // 讀取 BellConfig (BellType -> Repeat)
+      if (Array.isArray(data.BellConfig)) {
         bellConfig = data.BellConfig.reduce((acc, row) => {
-            const key = row.bellType ?? row.BellType ?? row.type;
-            const repeat = row.repeat ?? row.Repeat ?? row.count;
-            if (key != null) acc[key] = repeat || 1;
-            return acc;
+          const key = row.bellType ?? row.BellType ?? row.type;
+          const repeat = row.repeat ?? row.Repeat ?? row.count;
+          if (key != null) acc[key] = repeat || 1;
+          return acc;
         }, {});
-    } else {
+      } else {
         bellConfig = { ...data.BellConfig };
-    }
+      }
 
 
-        alarms = [];
-        data.CourseSchedule.forEach(course =>{
-            const courseDayCount = data.CourseTypes[course.courseType].length
-            const dates = generateDateArray(course.startDate, courseDayCount);
+      alarms = [];
+      data.CourseSchedule.forEach(course => {
+        const courseDayCount = data.CourseTypes[course.courseType].length
+        const dates = generateDateArray(course.startDate, courseDayCount);
 
-            dates.forEach((date, index) =>{
-                const patternId = data.CourseTypes[course.courseType][index].dailyPattern
-                const items = data.DailyPatterns[patternId];
-                // 確認是否已有該日期，若有則合併時間
-                const existingAlarm = alarms.find(alarm => alarm.date === date);
-                if (existingAlarm) {
-                    items.forEach(({ time, bellType }) => {
-                existingAlarm.times = Array.from(new Set([...existingAlarm.times, time])).sort();
-                existingAlarm.bellTypes[time] = bellType;
+        dates.forEach((date, index) => {
+          const patternId = data.CourseTypes[course.courseType][index].dailyPattern
+          const items = data.DailyPatterns[patternId];
+          // 確認是否已有該日期，若有則合併時間
+          const existingAlarm = alarms.find(alarm => alarm.date === date);
+          if (existingAlarm) {
+            items.forEach(({ time, bellType }) => {
+              existingAlarm.times = Array.from(new Set([...existingAlarm.times, time])).sort();
+              existingAlarm.bellTypes[time] = bellType;
             });
-                } else {
-                    const timesWithType = items.reduce((acc, it) => {
-                    acc.times.push(it.time);
-                    acc.bellTypes[it.time] = it.bellType;
-                    return acc;
-                }, { times: [], bellTypes: {} });
-                alarms.push({ date, times: Array.from(new Set(timesWithType.times)).sort(), bellTypes: timesWithType.bellTypes });
-                }                            
-            })
-
+          } else {
+            const timesWithType = items.reduce((acc, it) => {
+              acc.times.push(it.time);
+              acc.bellTypes[it.time] = it.bellType;
+              return acc;
+            }, { times: [], bellTypes: {} });
+            alarms.push({ date, times: Array.from(new Set(timesWithType.times)).sort(), bellTypes: timesWithType.bellTypes });
+          }
         })
 
-        deletePastAlarms();
-        sortAlarms();
-        renderAlarms();
+      })
+
+      deletePastAlarms();
+      sortAlarms();
+      renderAlarms();
     }
 
     function generateDateArray(startDateStr, days) {
-        const result = [];
-        const startDate = new Date(startDateStr);
-      
-        for (let i = 0; i < days; i++) {
-          const date = new Date(startDate);
-          date.setDate(startDate.getDate() + i);
-          
-          // 格式化成 YYYY-MM-DD
-          const formatted = date.toISOString().split('T')[0];
-          result.push(formatted);
-        }
-      
-        return result;
+      const result = [];
+      const startDate = new Date(startDateStr);
+
+      for (let i = 0; i < days; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+
+        // 格式化成 YYYY-MM-DD
+        const formatted = date.toISOString().split('T')[0];
+        result.push(formatted);
       }
-      
-      
 
-function showAudioError(msg) {
-    const errDiv = document.getElementById('audio-error');
-    errDiv.textContent = msg;
-    errDiv.classList.remove('hidden');
-}
-function hideAudioError() {
-    const errDiv = document.getElementById('audio-error');
-    errDiv.textContent = '';
-    errDiv.classList.add('hidden');
-}
-// 依日期升冪排列
-function sortAlarms() {
-    alarms.sort((a, b) => new Date(a.date) - new Date(b.date));
+      return result;
+    }
 
-    // 每個日期內的時間也升冪排列
-    alarms.forEach(alarm => {
+
+
+    function showAudioError(msg) {
+      const errDiv = document.getElementById('audio-error');
+      errDiv.textContent = msg;
+      errDiv.classList.remove('hidden');
+    }
+    function hideAudioError() {
+      const errDiv = document.getElementById('audio-error');
+      errDiv.textContent = '';
+      errDiv.classList.add('hidden');
+    }
+    // 依日期升冪排列
+    function sortAlarms() {
+      alarms.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      // 每個日期內的時間也升冪排列
+      alarms.forEach(alarm => {
         alarm.times.sort((a, b) => {
-            const [ha, ma] = a.split(':').map(Number);
-            const [hb, mb] = b.split(':').map(Number);
-            return ha !== hb ? ha - hb : ma - mb;
+          const [ha, ma] = a.split(':').map(Number);
+          const [hb, mb] = b.split(':').map(Number);
+          return ha !== hb ? ha - hb : ma - mb;
         });
-    });
-}
+      });
+    }
 
     // 渲染鬧鐘列表
     function renderAlarms() {
-        dateList.innerHTML = '';
+      dateList.innerHTML = '';
 
-        alarms
+      alarms
         .forEach((alarm, index) => {
-            const block = document.createElement('div');
-            block.className = 'date-block';
+          const block = document.createElement('div');
+          block.className = 'date-block';
 
-            block.innerHTML = `
+          block.innerHTML = `
                 <h3>${alarm.date}
                 </h3>
                 <p>🔔 ${alarm.times.join(', ')}</p>
             `;
-            dateList.appendChild(block);
+          dateList.appendChild(block);
         });
     }
 
-
-
-
     function runEveryMinuteAtZeroSecond() {
-        const now = new Date();
-        const next = new Date(now);
+      const now = new Date();
+      const next = new Date(now);
 
-        next.setSeconds(0);
-        next.setMilliseconds(0);
-        next.setMinutes(now.getMinutes() + 1); // 下一分鐘的 0 秒
-      
-        const delay = next - now; // 剩餘時間（毫秒）
-      
-        setTimeout(() => {
-          const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()+1).padStart(2, '0')}`;
+      next.setSeconds(0);
+      next.setMilliseconds(0);
+      next.setMinutes(now.getMinutes() + 1); // 下一分鐘的 0 秒
+
+      const delay = next - now; // 剩餘時間（毫秒）
+
+      setTimeout(() => {
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes() + 1).padStart(2, '0')}`;
 
 
-          // ✅ 在每分鐘的 0 秒執行這段
-          console.log("⏰ 每分鐘的第 0 秒執行任務", new Date().toLocaleTimeString());
-          if (alarms && alarms[0].date === getTodayDateFormatted() && alarms[0].times.includes(currentTime)) {
-        const bellType = alarms[0].bellTypes[currentTime] || 1;
-        const repeatTimes = bellConfig[bellType] || 1;
-            playAlarmTimes(repeatTimes);
+        // ✅ 在每分鐘的 0 秒執行這段
+        console.log("⏰ 每分鐘的第 0 秒執行任務", new Date().toLocaleTimeString());
+        if (alarms && alarms[0].date === getTodayDateFormatted() && alarms[0].times.includes(currentTime)) {
+          const bellType = alarms[0].bellTypes[currentTime] || 1;
+          const repeatTimes = bellConfig[bellType] || 1;
+          playAlarmTimes(repeatTimes);
         }
-          // 做完後再安排下一次
-          runEveryMinuteAtZeroSecond();
-        }, delay);
-      }
-      
-      runEveryMinuteAtZeroSecond();
-      
+        // 做完後再安排下一次
+        runEveryMinuteAtZeroSecond();
+      }, delay);
+    }
+
+    runEveryMinuteAtZeroSecond();
 
     function scheduleMidnightTask() {
-        const now = new Date();
-        const nextMidnight = new Date();
-      
-        nextMidnight.setDate(now.getDate() + 1); // 明天
-        nextMidnight.setHours(0, 0, 0, 0); // 設為 00:00:00.000
-      
-        const timeUntilMidnight = nextMidnight - now;
-      
-        setTimeout(() => {
-          // ✅ 在 0:00 執行你的任務
-          console.log("🕛 每日午夜任務執行！");
-          deletePastAlarms();
-                
-          // 然後再次排程明天的 0:00
-          scheduleMidnightTask();
-        }, timeUntilMidnight);
+      const now = new Date();
+      const nextMidnight = new Date();
+
+      nextMidnight.setDate(now.getDate() + 1); // 明天
+      nextMidnight.setHours(0, 0, 0, 0); // 設為 00:00:00.000
+
+      const timeUntilMidnight = nextMidnight - now;
+
+      setTimeout(() => {
+        // ✅ 在 0:00 執行你的任務
+        console.log("🕛 每日午夜任務執行！");
+        deletePastAlarms();
+
+        // 然後再次排程明天的 0:00
+        scheduleMidnightTask();
+      }, timeUntilMidnight);
+    }
+
+    scheduleMidnightTask();
+
+    function playAlarmTimes(times = 1) {
+      if (isAlarmPlaying) return; // 已在播放
+      isAlarmPlaying = true;
+      const gapMs = 300; // 每聲之間的額外停頓 (毫秒)
+      let count = 0;
+
+      // 開啟視覺效果
+      playVisualAlarm(true);
+      updatePlayButton(true);
+
+      const playNext = () => {
+        if (count >= times) {
+          // 全部播放完，關閉視覺效果
+          playVisualAlarm(false);
+          updatePlayButton(false);
+          isAlarmPlaying = false;
+          return;
+        }
+
+        alarmSound.currentTime = 0;
+        alarmSound.play().catch(() => { });
+        count += 1;
+
+        // 等待音檔播畢後再播放下一聲
+        alarmSound.addEventListener(
+          'ended',
+          () => {
+            pendingNextTimeout = setTimeout(playNext, gapMs);
+          },
+          { once: true }
+        );
+      };
+
+      playNext();
+    }
+
+    // 手動播放
+    function playAlarm() {
+      if (isAlarmPlaying) {
+        stopAlarm();
+      } else {
+        playAlarmTimes(3);
       }
-      
-      scheduleMidnightTask();
+    }
 
-  function playAlarmTimes(times = 1) {
-    if (isAlarmPlaying) return; // 已在播放
-    isAlarmPlaying = true;
-    const gapMs = 300; // 每聲之間的額外停頓 (毫秒)
-    let count = 0;
-
-    // 開啟視覺效果
-    playVisualAlarm(true);
-    updatePlayButton(true);
-
-    const playNext = () => {
-      if (count >= times) {
-        // 全部播放完，關閉視覺效果
-        playVisualAlarm(false);
-        updatePlayButton(false);
-        isAlarmPlaying = false;
-        return;
-      }
-
-      alarmSound.currentTime = 0;
-      alarmSound.play().catch(() => {});
-      count += 1;
-
-      // 等待音檔播畢後再播放下一聲
-      alarmSound.addEventListener(
-        'ended',
-        () => {
-        pendingNextTimeout = setTimeout(playNext, gapMs);
-      },
-      { once: true }
-    );
-  };
-
-  playNext();
-}
-
-// 手動播放
-function playAlarm() {
-  if (isAlarmPlaying) {
-    stopAlarm();
-  } else {
-    playAlarmTimes(3);
-  }
-}
-
-function stopAlarm() {
-    if (!isAlarmPlaying) return;
-    if (pendingNextTimeout) {
+    function stopAlarm() {
+      if (!isAlarmPlaying) return;
+      if (pendingNextTimeout) {
         clearTimeout(pendingNextTimeout);
         pendingNextTimeout = null;
+      }
+      alarmSound.pause();
+      alarmSound.currentTime = 0;
+      playVisualAlarm(false);
+      updatePlayButton(false);
+      isAlarmPlaying = false;
     }
-    alarmSound.pause();
-    alarmSound.currentTime = 0;
-    playVisualAlarm(false);
-    updatePlayButton(false);
-    isAlarmPlaying = false;
-}
 
-function playVisualAlarm(enable = true) {
-    const playButton = document.querySelector('.play-button');
-    if (enable) {
+    function playVisualAlarm(enable = true) {
+      const playButton = document.querySelector('.play-button');
+      if (enable) {
         playButton.classList.add('flash');
-    } else {
+      } else {
         playButton.classList.remove('flash');
+      }
     }
-}
 
-// 更新手動敲鐘按鈕文字
-function updatePlayButton(isPlaying = false) {
-    const playTextDiv = document.querySelector('.play-text');
-    if (!playTextDiv) return;
-    if (isPlaying) {
+    // 更新手動敲鐘按鈕文字
+    function updatePlayButton(isPlaying = false) {
+      const playTextDiv = document.querySelector('.play-text');
+      if (!playTextDiv) return;
+      if (isPlaying) {
         playTextDiv.innerHTML = '點此停止鐘聲<br/>⏹️';
-    } else {
+      } else {
         playTextDiv.innerHTML = '點此手動敲鐘<br/>▶️';
+      }
     }
-}
 
-function deletePastAlarms() {
-    const today = getTodayDateFormatted();
-    const originalCount = alarms.length;
+    function deletePastAlarms() {
+      const today = getTodayDateFormatted();
+      const originalCount = alarms.length;
 
-    alarms = alarms.filter(alarm => alarm.date >= today);
+      alarms = alarms.filter(alarm => alarm.date >= today);
 
-    if (alarms.length < originalCount) {
+      if (alarms.length < originalCount) {
         renderAlarms();
+      }
     }
-}
 
-class BellSchedulerUI {
-    constructor() {
+    class BellSchedulerUI {
+      constructor() {
         // 在 Google Apps Script 環境中，使用當前頁面的 URL 作為 API 基礎
         this.apiUrl = window.location.href.split('?')[0];
         this.initEventListeners();
         this.init();
-    }
+      }
 
-    async init() {
+      async init() {
         // 等待非同步載入完成
         await this.loadCourseData();
-    }
+      }
 
-    initEventListeners() {
+      initEventListeners() {
         document.getElementById('keepaliveBtn').addEventListener('click', () => this.checkSystemStatus());
         document.getElementById('loadBtn').addEventListener('click', () => this.loadCourseData());
-    }
+      }
 
-    showStatus(message, type = 'loading') {
+      showStatus(message, type = 'loading') {
         const statusEl = document.getElementById('status');
         statusEl.textContent = message;
         statusEl.className = `status ${type}`;
         statusEl.classList.remove('hidden');
-    }
+      }
 
-    hideStatus() {
+      hideStatus() {
         document.getElementById('status').classList.add('hidden');
-    }
+      }
 
-    // 專門處理 Google Apps Script API 呼叫的方法
-    async callGoogleAppsScriptAPI(path) {
+      // 專門處理 Google Apps Script API 呼叫的方法
+      async callGoogleAppsScriptAPI(path) {
         return new Promise((resolve, reject) => {
-            // 在 Google Apps Script 環境中，我們可以使用 google.script.run
-            if (typeof google !== 'undefined' && google.script && google.script.run) {
-                // 使用 Google Apps Script 的內建 API
-                switch(path) {
-                    case 'course':
-                        google.script.run
-                            .withSuccessHandler(resolve)
-                            .withFailureHandler((error) => {
-                                // 處理 Google Apps Script 錯誤
-                                const errorMessage = error && error.message ? error.message : 
-                                                   (typeof error === 'string' ? error : 'Network error');
-                                reject(new Error(errorMessage));
-                            })
-                            .exportBellScheduleJSON();
-                        break;
-                    case 'keepalive':
-                        google.script.run
-                            .withSuccessHandler(resolve)
-                            .withFailureHandler((error) => {
-                                // 處理 Google Apps Script 錯誤
-                                const errorMessage = error && error.message ? error.message : 
-                                                   (typeof error === 'string' ? error : 'Network error');
-                                reject(new Error(errorMessage));
-                            })
-                            .getKeepAliveData();
-                        break;
-                    default:
-                        reject(new Error('Unknown API path'));
-                }
-            } else {
-                // 如果不在 Google Apps Script 環境中，使用傳統的 fetch
-                this.callAPIWithFetch(path).then(resolve).catch(reject);
+          // 在 Google Apps Script 環境中，我們可以使用 google.script.run
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            // 使用 Google Apps Script 的內建 API
+            switch (path) {
+              case 'course':
+                google.script.run
+                  .withSuccessHandler(resolve)
+                  .withFailureHandler((error) => {
+                    // 處理 Google Apps Script 錯誤
+                    const errorMessage = error && error.message ? error.message :
+                      (typeof error === 'string' ? error : 'Network error');
+                    reject(new Error(errorMessage));
+                  })
+                  .exportBellScheduleJSON();
+                break;
+              case 'keepalive':
+                google.script.run
+                  .withSuccessHandler(resolve)
+                  .withFailureHandler((error) => {
+                    // 處理 Google Apps Script 錯誤
+                    const errorMessage = error && error.message ? error.message :
+                      (typeof error === 'string' ? error : 'Network error');
+                    reject(new Error(errorMessage));
+                  })
+                  .getKeepAliveData();
+                break;
+              default:
+                reject(new Error('Unknown API path'));
             }
+          } else {
+            // 如果不在 Google Apps Script 環境中，使用傳統的 fetch
+            this.callAPIWithFetch(path).then(resolve).catch(reject);
+          }
         });
-    }
+      }
 
-            // 傳統的 fetch API 呼叫方法（作為備用）
-            async callAPIWithFetch(path) {
-                const apiUrl = `${this.apiUrl}?path=${path}`;
-                
-                try {
-                    const response = await fetch(apiUrl);
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    
-                    const responseText = await response.text();
-                    
-                    // 嘗試從 HTML 回應中提取 JSON
-                    if (jsonMatch && jsonMatch.length > 0) {
-                        // 找到最大的 JSON 字串（可能是我們要的資料）
-                        let largestJson = jsonMatch.reduce((a, b) => a.length > b.length ? a : b);
-                        try {
-                            return JSON.parse(largestJson);
-                        } catch (e) {
-                            // 靜默處理解析錯誤
-                        }
-                    }
-                    
-                    // 如果找不到 JSON，嘗試直接解析
-                    try {
-                        return JSON.parse(responseText);
-                    } catch (e) {
-                        throw new Error('無法從伺服器回應中解析 JSON 資料');
-                    }
-                } catch (error) {
-                    // 處理網路連線錯誤
-                    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-                        throw new Error('Network error');
-                    } else {
-                        throw error;
-                    }
-                }
+      // 傳統的 fetch API 呼叫方法（作為備用）
+      async callAPIWithFetch(path) {
+        const apiUrl = `${this.apiUrl}?path=${path}`;
+
+        try {
+          const response = await fetch(apiUrl);
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const responseText = await response.text();
+
+          // 嘗試從 HTML 回應中提取 JSON
+          if (jsonMatch && jsonMatch.length > 0) {
+            // 找到最大的 JSON 字串（可能是我們要的資料）
+            let largestJson = jsonMatch.reduce((a, b) => a.length > b.length ? a : b);
+            try {
+              return JSON.parse(largestJson);
+            } catch (e) {
+              // 靜默處理解析錯誤
+            }
+          }
+
+          // 如果找不到 JSON，嘗試直接解析
+          try {
+            return JSON.parse(responseText);
+          } catch (e) {
+            throw new Error('無法從伺服器回應中解析 JSON 資料');
+          }
+        } catch (error) {
+          // 處理網路連線錯誤
+          if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+            throw new Error('Network error');
+          } else {
+            throw error;
+          }
+        }
+      }
+
+
+      async checkSystemStatus() {
+        try {
+          this.showStatus('💓 Checking...', 'loading');
+
+          // 呼叫 keepalive API 獲取系統狀態
+          const data = await this.callGoogleAppsScriptAPI('keepalive');
+
+          if (data.status === 'OK') {
+            const lastDataChangeTime = JSON.stringify(data.lastDataChange)
+            const lastDataChangeLocal = localStorage.getItem('lastDataChange');
+
+            let statusMessage = `✅ Version ${lastDataChangeTime}`;
+
+            if (lastDataChangeTime !== lastDataChangeLocal) {
+              const app = new BellSchedulerUI();
+              app.loadCourseData();
+
+              localStorage.setItem('lastDataChange', JSON.stringify(data.lastDataChange));
             }
 
-
-    async checkSystemStatus() {
-        try {
-            this.showStatus('💓 Checking...', 'loading');
-            
-            // 呼叫 keepalive API 獲取系統狀態
-            const data = await this.callGoogleAppsScriptAPI('keepalive');
-            
-            if (data.status === 'OK') {
-                const lastDataChangeTime = JSON.stringify(data.lastDataChange)
-                const lastDataChangeLocal = localStorage.getItem('lastDataChange');
-
-                let statusMessage = `✅ Version ${lastDataChangeTime}`;
-
-                if (lastDataChangeTime !== lastDataChangeLocal){
-                    const app = new BellSchedulerUI();
-                    app.loadCourseData();
-
-                    localStorage.setItem('lastDataChange', JSON.stringify(data.lastDataChange));
-                }
-
-                if (data.systemConfig && data.systemConfig.KeepAliveInterval) {
-                    // statusMessage += ` (Keep-Alive: ${data.systemConfig.KeepAliveInterval}分鐘)`;
-                    localStorage.setItem('keepAliveInterval', JSON.stringify(data.systemConfig.KeepAliveInterval));
-                }
-                const statusBox = document.getElementById('status');
-                statusBox.innerHTML = `<div class="alert alert-success"><i class="fas fa-check-circle"></i> ${statusMessage}</div>`;
-            } else {
-                this.showStatus('⚠️ 系統狀態異常', 'error');
+            if (data.systemConfig && data.systemConfig.KeepAliveInterval) {
+              // statusMessage += ` (Keep-Alive: ${data.systemConfig.KeepAliveInterval}分鐘)`;
+              localStorage.setItem('keepAliveInterval', JSON.stringify(data.systemConfig.KeepAliveInterval));
             }
-            
-            // 移除自動隱藏，讓 JSON 結果保持顯示
-            // setTimeout(() => this.hideStatus(), 5000);
-            
-        } catch (error) {
-            this.showStatus(`❌ ${error.message}`, 'error');
-        }
-    }
+            const statusBox = document.getElementById('status');
+            statusBox.innerHTML = `<div class="alert alert-success"><i class="fas fa-check-circle"></i> ${statusMessage}</div>`;
+          } else {
+            this.showStatus('⚠️ 系統狀態異常', 'error');
+          }
 
-    async loadCourseData() {
+          // 移除自動隱藏，讓 JSON 結果保持顯示
+          // setTimeout(() => this.hideStatus(), 5000);
+
+        } catch (error) {
+          this.showStatus(`❌ ${error.message}`, 'error');
+        }
+      }
+
+      async loadCourseData() {
         try {
-            localStorage.removeItem('alarms');
+          localStorage.removeItem('alarms');
 
-            // this.showStatus('🔄 Loading...', 'loading');
-            
-            // 使用 Google Apps Script 的特殊方式呼叫 API
-            const data = await this.callGoogleAppsScriptAPI('course');
-            
-            this.updateAlarmData(data);
+          // this.showStatus('🔄 Loading...', 'loading');
 
-            // this.showStatus('✅', 'success');
-            
-            // setTimeout(() => this.hideStatus(), 3000);
+          // 使用 Google Apps Script 的特殊方式呼叫 API
+          const data = await this.callGoogleAppsScriptAPI('course');
 
-            
+          this.updateAlarmData(data);
+
+          // this.showStatus('✅', 'success');
+
+          // setTimeout(() => this.hideStatus(), 3000);
+
+
         } catch (error) {
-            this.showStatus(`❌ ${error.message}`, 'error');
+          this.showStatus(`❌ ${error.message}`, 'error');
         }
-    }
+      }
 
-    updateAlarmData(data) {
+      updateAlarmData(data) {
         syncAlarm(data);
         sortAlarms();
         renderAlarms();
+      }
     }
-}
 
-// 初始化應用程式
-document.addEventListener('DOMContentLoaded', () => {
-    // new BellSchedulerUI();
-    const bellApp = new BellSchedulerUI();
-    bellApp.checkSystemStatus();
-    const keepAliveInterval = localStorage.getItem('keepAliveInterval') || 0.5;
-    console.log(keepAliveInterval)
+    // 初始化應用程式
+    document.addEventListener('DOMContentLoaded', () => {
+      // new BellSchedulerUI();
+      const bellApp = new BellSchedulerUI();
+      bellApp.checkSystemStatus();
+      const keepAliveInterval = localStorage.getItem('keepAliveInterval') || 0.5;
+      console.log(keepAliveInterval)
 
-    // 連線檢查器
-    setInterval(() => {
+      // 連線檢查器
+      setInterval(() => {
         bellApp.checkSystemStatus();
-    }, keepAliveInterval*60000);
+      }, keepAliveInterval * 60000);
 
-});
+    });
 
-function getTodayDateFormatted() {
-  const today = new Date();
+    function getTodayDateFormatted() {
+      const today = new Date();
 
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0'); // 月份從 0 開始
-  const day = String(today.getDate()).padStart(2, '0');
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0'); // 月份從 0 開始
+      const day = String(today.getDate()).padStart(2, '0');
 
-  return `${year}-${month}-${day}`;
-}
+      return `${year}-${month}-${day}`;
+    }
 
-renderAlarms();
+    renderAlarms();
 
-</script>
+  </script>
 
 </body>
+
 </html>
