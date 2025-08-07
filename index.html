@@ -225,66 +225,35 @@
 
     <!-- Debug Log 區塊，移到行程表前面 -->
     <style>
-      .audio-test-tools {
-        background: #292929;
-        border-radius: 8px;
-        border: 1.5px solid #444;
-        padding: 14px 18px 10px 12px;
-        margin-bottom: 16px;
-        max-width: 100%;
-        box-sizing: border-box;
-      }
-      .audio-test-tools legend {
-        color: #0f0;
-        font-size: 14px;
-        font-weight: bold;
-        letter-spacing: 1px;
-        margin-bottom: 4px;
-      }
-      .audio-test-btns {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px 10px;
-        margin-top: 2px;
-      }
-      .audio-test-btns button {
-        background: #232323;
-        color: #0f0;
-        border: 1px solid #444;
-        border-radius: 6px;
-        padding: 6px 14px;
-        font-size: 13px;
-        margin: 0;
-        cursor: pointer;
-        transition: background 0.18s, color 0.18s, box-shadow 0.18s;
-      }
-      .audio-test-btns button:hover {
-        background: #0f0;
-        color: #222;
-        box-shadow: 0 0 0 2px #0f0 inset;
-      }
     </style>
-    <div class="audio-test-tools">
-      <fieldset style="border:none;padding:0;margin:0;min-width:0;">
-        <legend>音訊測試工具</legend>
-        <div class="audio-test-btns">
-          <button onclick="alarmSound.muted=true; debugLog('alarmSound.muted = true');">muted = true</button>
-          <button onclick="alarmSound.muted=false; debugLog('alarmSound.muted = false');">muted = false</button>
-          <button onclick="alarmSound.pause(); debugLog('alarmSound.pause()');">pause()</button>
-          <button onclick="alarmSound.play().then(()=>debugLog('alarmSound.play() resolved')).catch(e=>debugLog('alarmSound.play() error: '+e)); debugLog('alarmSound.play() called');">play()</button>
-          <button onclick="debugLog('currentTime: ' + alarmSound.currentTime);">print currentTime</button>
-          <button onclick="debugLog('isPlaying: ' + (!alarmSound.paused));">print isPlaying</button>
-          <button onclick="alarmSound.currentTime=0; debugLog('alarmSound.currentTime = 0');">currentTime = 0</button>
-          <button onclick="playSingleAlarm(1,1); debugLog('PlaySingleAlarm()');">PlaySingleAlarm()</button>
-          <button onclick="stopAlarm(); debugLog('stopAlarm()');">stopAlarm()</button>
-        </div>
-      </fieldset>
-    </div>
-    <div id="debug-log" style="background:#222;color:#0f0;font-size:12px;max-height:200px;overflow:auto;padding:8px;margin-bottom:12px;border-radius:6px;"></div>
+    <button id="debug-log-toggle" style="margin-bottom:8px;">顯示除錯紀錄</button>
+    <div id="debug-log" style="display:none;background:#222;color:#0f0;font-size:12px;max-height:200px;overflow:auto;padding:8px;margin-bottom:12px;border-radius:6px;"></div>
     <div id="date-list"></div>
 
   </div>
 
+  <script>
+    // Debug log toggle
+    const debugLogDiv = document.getElementById('debug-log');
+    const debugLogToggle = document.getElementById('debug-log-toggle');
+    let debugLogVisible = false;
+    debugLogToggle.addEventListener('click', () => {
+      debugLogVisible = !debugLogVisible;
+      debugLogDiv.style.display = debugLogVisible ? '' : 'none';
+      debugLogToggle.textContent = debugLogVisible ? '隱藏除錯紀錄' : '顯示除錯紀錄';
+    });
+    // 限制最大行數
+    const MAX_DEBUG_LINES = 200;
+    function debugLog(msg) {
+      const lines = debugLogDiv.innerHTML.split('<br>');
+      if (lines.length >= MAX_DEBUG_LINES) {
+        debugLogDiv.innerHTML = lines.slice(lines.length - MAX_DEBUG_LINES + 1).join('<br>');
+      }
+      debugLogDiv.innerHTML += (debugLogDiv.innerHTML ? '<br>' : '') +
+        `[${new Date().toLocaleTimeString()}] ${msg}`;
+      if (debugLogVisible) debugLogDiv.scrollTop = debugLogDiv.scrollHeight;
+    }
+  </script>
   <!-- <audio id="alarm-sound" src="https://discourses.dhamma.org/oml/recordings/uuid/b9ddfddd-163d-484e-9588-cb34ab524dc2.mp3" preload="auto"></audio> -->
   <audio id="alarm-sound" type="audio/mp3" preload="auto">
     <source src="">
@@ -465,13 +434,13 @@
 
       const delay = next - now; // 剩餘時間（毫秒）
 
-      debugLog('runEveryMinuteAtZeroSecond: scheduling next minute task, delay=' + delay);
+      // debugLog('runEveryMinuteAtZeroSecond: scheduling next minute task, delay=' + delay);
       setTimeout(() => {
         const hh = String(next.getHours()).padStart(2, '0');
         const mm = String(next.getMinutes()).padStart(2, '0');
         const currentTime = `${hh}:${mm}`;
 
-        debugLog('每分鐘的第 0 秒執行任務: ' + currentTime);
+        // debugLog('每分鐘的第 0 秒執行任務: ' + currentTime);
         if (alarms && alarms.length > 0 && alarms[0].date === getTodayDateFormatted() && alarms[0].times.includes(currentTime)) {
           const bellType = alarms[0].bellTypes[currentTime] || 1;
           const repeatTimes = bellConfig[bellType] || 1;
@@ -537,7 +506,7 @@
       const bellDuration = 16; // 秒
 
       function playNext() {
-        debugLog(`playNext: count=${count}, times=${times}`);
+        // debugLog(`playNext: count=${count}, times=${times}`);
         if (!isAlarmPlaying) {
           debugLog('playNext aborted: isAlarmPlaying is false');
           return;
@@ -554,7 +523,7 @@
         pendingNextTimeout = setTimeout(playNext, (bellDuration * 1000) + gapMs);
       }
       logBellPlay(triggerType, times);
-      debugLog('playAlarmSequence: start playNext');
+      // debugLog('playAlarmSequence: start playNext');
       playNext();
     }
 
@@ -563,7 +532,7 @@
       // 先移除舊的 onended，避免重複觸發
       alarmSound.onended = null;
       alarmSound.onended = function() {
-        debugLog('alarmSound ended, call load()');
+        // debugLog('alarmSound ended, call load()');
         alarmSound.load();
       };
 
@@ -588,7 +557,7 @@
       debugLog('stopAlarm() called');
       if (!isAlarmPlaying) return;
       if (pendingNextTimeout) {
-        debugLog('Clearing pendingNextTimeout');
+        // debugLog('Clearing pendingNextTimeout');
         clearTimeout(pendingNextTimeout);
         pendingNextTimeout = null;
       }
@@ -661,7 +630,7 @@
 
       // 專門處理 Google Apps Script API 呼叫的方法
       async callGoogleAppsScriptAPI(path) {
-    debugLog('callGoogleAppsScriptAPI called: ' + path);
+        debugLog('callGoogleAppsScriptAPI called: ' + path);
         return new Promise((resolve, reject) => {
           // 在 Google Apps Script 環境中，我們可以使用 google.script.run
           if (typeof google !== 'undefined' && google.script && google.script.run) {
@@ -741,12 +710,12 @@
 
 
       async checkSystemStatus() {
-    debugLog('checkSystemStatus() called');
+    // debugLog('checkSystemStatus() called');
         try {
           this.showStatus('💓 Checking...', 'loading');
 
           // 呼叫 keepalive API 獲取系統狀態
-          debugLog('Calling keepalive API');
+          // debugLog('Calling keepalive API');
       const data = await this.callGoogleAppsScriptAPI('keepalive');
       debugLog('keepalive API response: ' + JSON.stringify(data));
 
@@ -840,18 +809,6 @@
 
   </script>
 
-
-  <script>
-    // Debug log 函式
-    function debugLog(msg) {
-      const logDiv = document.getElementById('debug-log');
-      const now = new Date().toLocaleTimeString();
-      if (typeof msg !== 'string') msg = JSON.stringify(msg);
-      logDiv.innerHTML += `<div>[${now}] ${msg}</div>`;
-      logDiv.scrollTop = logDiv.scrollHeight;
-      console.log('[DEBUG]', msg);
-    }
-  </script>
 </body>
 
 </html>
