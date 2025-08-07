@@ -190,6 +190,19 @@
       display: none;
     }
   </style>
+  <script>
+    // Debug log 函式（放到所有 JS 之前）
+    function debugLog(msg) {
+      const logDiv = document.getElementById('debug-log');
+      const now = new Date().toLocaleTimeString();
+      if (typeof msg !== 'string') msg = JSON.stringify(msg);
+      if (logDiv) {
+        logDiv.innerHTML += `<div>[${now}] ${msg}</div>`;
+        logDiv.scrollTop = logDiv.scrollHeight;
+      }
+      console.log('[DEBUG]', msg);
+    }
+  </script>
 </head>
 
 <body>
@@ -208,8 +221,67 @@
       請點擊畫面以啟用鐘聲🔓
     </div>
 
-    <div id="date-list"></div>
+    <div id="bell-log" style="max-height:120px;overflow:auto;background:#f6f6f6;border:1px solid #ccc;padding:8px;margin-bottom:8px;font-size:14px;"></div>
 
+    <!-- Debug Log 區塊，移到行程表前面 -->
+    <style>
+      .audio-test-tools {
+        background: #292929;
+        border-radius: 8px;
+        border: 1.5px solid #444;
+        padding: 14px 18px 10px 12px;
+        margin-bottom: 16px;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      .audio-test-tools legend {
+        color: #0f0;
+        font-size: 14px;
+        font-weight: bold;
+        letter-spacing: 1px;
+        margin-bottom: 4px;
+      }
+      .audio-test-btns {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 10px;
+        margin-top: 2px;
+      }
+      .audio-test-btns button {
+        background: #232323;
+        color: #0f0;
+        border: 1px solid #444;
+        border-radius: 6px;
+        padding: 6px 14px;
+        font-size: 13px;
+        margin: 0;
+        cursor: pointer;
+        transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+      }
+      .audio-test-btns button:hover {
+        background: #0f0;
+        color: #222;
+        box-shadow: 0 0 0 2px #0f0 inset;
+      }
+    </style>
+    <div class="audio-test-tools">
+      <fieldset style="border:none;padding:0;margin:0;min-width:0;">
+        <legend>音訊測試工具</legend>
+        <div class="audio-test-btns">
+          <button onclick="alarmSound.muted=true; debugLog('alarmSound.muted = true');">muted = true</button>
+          <button onclick="alarmSound.muted=false; debugLog('alarmSound.muted = false');">muted = false</button>
+          <button onclick="alarmSound.pause(); debugLog('alarmSound.pause()');">pause()</button>
+          <button onclick="alarmSound.play().then(()=>debugLog('alarmSound.play() resolved')).catch(e=>debugLog('alarmSound.play() error: '+e)); debugLog('alarmSound.play() called');">play()</button>
+          <button onclick="debugLog('currentTime: ' + alarmSound.currentTime);">print currentTime</button>
+          <button onclick="debugLog('isPlaying: ' + (!alarmSound.paused));">print isPlaying</button>
+          <button onclick="alarmSound.currentTime=0; debugLog('alarmSound.currentTime = 0');">currentTime = 0</button>
+          <button onclick="playSingleAlarm(1,1); debugLog('PlaySingleAlarm()');">PlaySingleAlarm()</button>
+          <button onclick="stopAlarm(); debugLog('stopAlarm()');">stopAlarm()</button>
+        </div>
+      </fieldset>
+    </div>
+    <div id="debug-log" style="background:#222;color:#0f0;font-size:12px;max-height:200px;overflow:auto;padding:8px;margin-bottom:12px;border-radius:6px;"></div>
+    <div id="date-list"></div>
 
   </div>
 
@@ -393,16 +465,16 @@
 
       const delay = next - now; // 剩餘時間（毫秒）
 
+      debugLog('runEveryMinuteAtZeroSecond: scheduling next minute task, delay=' + delay);
       setTimeout(() => {
         const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes() + 1).padStart(2, '0')}`;
 
-
-        // ✅ 在每分鐘的 0 秒執行這段
-        console.log("⏰ 每分鐘的第 0 秒執行任務", new Date().toLocaleTimeString());
-        if (alarms && alarms[0].date === getTodayDateFormatted() && alarms[0].times.includes(currentTime)) {
+        debugLog('每分鐘的第 0 秒執行任務: ' + currentTime);
+        if (alarms && alarms.length > 0 && alarms[0].date === getTodayDateFormatted() && alarms[0].times.includes(currentTime)) {
           const bellType = alarms[0].bellTypes[currentTime] || 1;
           const repeatTimes = bellConfig[bellType] || 1;
-          playAlarmTimes(repeatTimes);
+          debugLog(`自動播放鐘聲: type=${bellType}, repeat=${repeatTimes}`);
+          playAlarmSequence(repeatTimes, '自動');
         }
         // 做完後再安排下一次
         runEveryMinuteAtZeroSecond();
@@ -432,54 +504,81 @@
 
     scheduleMidnightTask();
 
-    function playAlarmTimes(times = 1) {
-      if (isAlarmPlaying) return; // 已在播放
-      isAlarmPlaying = true;
-      const gapMs = 300; // 每聲之間的額外停頓 (毫秒)
-      let count = 0;
+    // 播放鐘聲紀錄
+    function logBellPlay(type, times) {
+      const logDiv = document.getElementById('bell-log');
+      if (!logDiv) return;
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      const msg = `[${hh}:${mm}:${ss}] ${type} 播放鐘聲 x${times}`;
+      // 插入最上方
+      logDiv.innerHTML = `<div>${msg}</div>` + logDiv.innerHTML;
+      // 最多只保留 20 筆
+      const logs = logDiv.querySelectorAll('div');
+      if (logs.length > 20) {
+        for(let i=20;i<logs.length;i++) logs[i].remove();
+      }
+    }
 
-      // 開啟視覺效果
+    // 敲鐘流程（手動/自動共用）
+    function playAlarmSequence(times = 1, triggerType = '自動') {
+      debugLog(`playAlarmSequence called: times=${times}, triggerType=${triggerType}, isAlarmPlaying=${isAlarmPlaying}`);
+      // stopAlarm(); // 保險：先確保狀態乾淨
+      if (times < 1) return;
+      isAlarmPlaying = true;
       playVisualAlarm(true);
       updatePlayButton(true);
+      let count = 0;
+      const gapMs = 300; // 每聲之間的額外停頓 (毫秒)
+      const bellDuration = 16; // 秒
 
-      const playNext = () => {
+      function playNext() {
+        debugLog(`playNext: count=${count}, times=${times}`);
+        if (!isAlarmPlaying) {
+          debugLog('playNext aborted: isAlarmPlaying is false');
+          return;
+        }
         if (count >= times) {
-          // 全部播放完，關閉視覺效果
+          debugLog('All bells played, finishing');
           playVisualAlarm(false);
           updatePlayButton(false);
           isAlarmPlaying = false;
           return;
         }
-
-        alarmSound.currentTime = 0;
-        alarmSound.play().catch(() => { });
-        count += 1;
-
-        // 等待音檔播畢後再播放下一聲
-        alarmSound.addEventListener(
-          'ended',
-          () => {
-            pendingNextTimeout = setTimeout(playNext, gapMs);
-          },
-          { once: true }
-        );
-      };
-
+        playSingleAlarm(count + 1, times);
+        count++;
+        pendingNextTimeout = setTimeout(playNext, (bellDuration * 1000) + gapMs);
+      }
+      logBellPlay(triggerType, times);
+      debugLog('playAlarmSequence: start playNext');
       playNext();
+    }
+
+    // 單次鐘聲播放
+    function playSingleAlarm(current, total) {
+      // alarmSound.pause();
+      alarmSound.currentTime = 0;
+      alarmSound.play().then(()=>debugLog('alarmSound.play() resolved')).catch((e)=>debugLog('alarmSound.play() error: '+e));
+      debugLog(`Bell played: ${current} / ${total}`);
     }
 
     // 手動播放
     function playAlarm() {
+      debugLog(`playAlarm() called, isAlarmPlaying=${isAlarmPlaying}`);
       if (isAlarmPlaying) {
         stopAlarm();
       } else {
-        playAlarmTimes(3);
+        playAlarmSequence(4, '手動');
       }
     }
 
     function stopAlarm() {
+      debugLog('stopAlarm() called');
       if (!isAlarmPlaying) return;
       if (pendingNextTimeout) {
+        debugLog('Clearing pendingNextTimeout');
         clearTimeout(pendingNextTimeout);
         pendingNextTimeout = null;
       }
@@ -552,6 +651,7 @@
 
       // 專門處理 Google Apps Script API 呼叫的方法
       async callGoogleAppsScriptAPI(path) {
+    debugLog('callGoogleAppsScriptAPI called: ' + path);
         return new Promise((resolve, reject) => {
           // 在 Google Apps Script 環境中，我們可以使用 google.script.run
           if (typeof google !== 'undefined' && google.script && google.script.run) {
@@ -631,11 +731,14 @@
 
 
       async checkSystemStatus() {
+    debugLog('checkSystemStatus() called');
         try {
           this.showStatus('💓 Checking...', 'loading');
 
           // 呼叫 keepalive API 獲取系統狀態
-          const data = await this.callGoogleAppsScriptAPI('keepalive');
+          debugLog('Calling keepalive API');
+      const data = await this.callGoogleAppsScriptAPI('keepalive');
+      debugLog('keepalive API response: ' + JSON.stringify(data));
 
           if (data.status === 'OK') {
             const lastDataChangeTime = JSON.stringify(data.lastDataChange)
@@ -705,7 +808,9 @@
       console.log(keepAliveInterval)
 
       // 連線檢查器
+      debugLog('Setting keepalive interval: ' + keepAliveInterval + ' min');
       setInterval(() => {
+        debugLog('Interval triggered: checkSystemStatus');
         bellApp.checkSystemStatus();
       }, keepAliveInterval * 60000);
 
@@ -725,6 +830,18 @@
 
   </script>
 
+
+  <script>
+    // Debug log 函式
+    function debugLog(msg) {
+      const logDiv = document.getElementById('debug-log');
+      const now = new Date().toLocaleTimeString();
+      if (typeof msg !== 'string') msg = JSON.stringify(msg);
+      logDiv.innerHTML += `<div>[${now}] ${msg}</div>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+      console.log('[DEBUG]', msg);
+    }
+  </script>
 </body>
 
 </html>
