@@ -467,7 +467,9 @@
 
       debugLog('runEveryMinuteAtZeroSecond: scheduling next minute task, delay=' + delay);
       setTimeout(() => {
-        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes() + 1).padStart(2, '0')}`;
+        const hh = String(next.getHours()).padStart(2, '0');
+        const mm = String(next.getMinutes()).padStart(2, '0');
+        const currentTime = `${hh}:${mm}`;
 
         debugLog('每分鐘的第 0 秒執行任務: ' + currentTime);
         if (alarms && alarms.length > 0 && alarms[0].date === getTodayDateFormatted() && alarms[0].times.includes(currentTime)) {
