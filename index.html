@@ -560,9 +560,17 @@
 
     // 單次鐘聲播放
     function playSingleAlarm(current, total) {
-      // alarmSound.pause();
-      alarmSound.currentTime = 0;
-      alarmSound.play().then(()=>debugLog('alarmSound.play() resolved')).catch((e)=>debugLog('alarmSound.play() error: '+e));
+      // 先移除舊的 onended，避免重複觸發
+      alarmSound.onended = null;
+      alarmSound.onended = function() {
+        debugLog('alarmSound ended, call load()');
+        alarmSound.load();
+      };
+
+      alarmSound.play()
+        .then(()=>debugLog('alarmSound.play() resolved'))
+        .catch((e)=>debugLog('alarmSound.play() error: '+e));
+
       debugLog(`Bell played: ${current} / ${total}`);
     }
 
