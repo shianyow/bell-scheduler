@@ -96,7 +96,17 @@
       const logDiv = document.getElementById('debug-log');
       const now = new Date().toLocaleTimeString();
       if (typeof msg !== 'string') msg = JSON.stringify(msg);
-      if (logDiv) { logDiv.innerHTML += `<div>[${now}] ${msg}</div>`; logDiv.scrollTop = logDiv.scrollHeight; }
+      if (logDiv) {
+        logDiv.innerHTML += `<div>[${now}] ${msg}</div>`;
+        // 限制最大行數，避免長時間運行造成 DOM 過大
+        const MAX_DEBUG_LINES = 200;
+        const nodes = logDiv.querySelectorAll('div');
+        const overflow = nodes.length - MAX_DEBUG_LINES;
+        if (overflow > 0) {
+          for (let i = 0; i < overflow; i++) nodes[i].remove();
+        }
+        logDiv.scrollTop = logDiv.scrollHeight;
+      }
       console.log('[DEBUG]', msg);
     }
   </script>
@@ -132,6 +142,9 @@
     let source = alarmSound.querySelector('source');
     if (!source) { source = document.createElement('source'); alarmSound.appendChild(source); }
     source.src = BELL_BASE64; alarmSound.load();
+    // 明確設定音量與靜音狀態
+    alarmSound.muted = false;
+    alarmSound.volume = 1.0;
 
     // 音訊解鎖
     const audioUnlockDiv = document.getElementById('audio-unlock');
@@ -191,7 +204,16 @@
     let isAlarmPlaying = false; let pendingNextTimeout = null;
     function playVisualAlarm(enable = true) { const btn = document.querySelector('.play-button'); enable ? btn.classList.add('flash') : btn.classList.remove('flash'); }
     function updatePlayButton(isPlaying = false) { const t = document.querySelector('.play-text'); if (!t) return; t.innerHTML = isPlaying ? '點此停止鐘聲<br/>⏹️' : '點此手動敲鐘<br/>▶️'; }
-    function playSingleAlarm(current, total) { alarmSound.onended = null; alarmSound.onended = () => { alarmSound.load(); }; alarmSound.play().catch(e => debugLog('play error:' + e)); debugLog(`Bell played: ${current}/${total}`); }
+    function playSingleAlarm(current, total) {
+      // 先移除舊的 onended，再於 ended 時呼叫 load()，避免多重觸發
+      alarmSound.onended = null;
+      alarmSound.onended = function () {
+        alarmSound.load();
+      };
+      alarmSound.play()
+        .catch((e) => debugLog('play error:' + e));
+      debugLog(`Bell played: ${current}/${total}`);
+    }
     function stopAlarm() { if (!isAlarmPlaying) return; if (pendingNextTimeout) { clearTimeout(pendingNextTimeout); pendingNextTimeout = null; } alarmSound.pause(); alarmSound.currentTime = 0; playVisualAlarm(false); updatePlayButton(false); isAlarmPlaying = false; }
     function playAlarmSequence(times = 1, trigger = '自動') {
       if (times < 1) return; isAlarmPlaying = true; playVisualAlarm(true); updatePlayButton(true); let count = 0; const gapMs = 300; const bellDuration = 16;
@@ -222,14 +244,14 @@
     function runEveryMinuteAtZeroSecond() {
       const now = new Date(); const next = new Date(now); next.setSeconds(0); next.setMilliseconds(0); next.setMinutes(now.getMinutes() + 1);
       const delay = next - now;
-      debugLog(`[tick] schedule next @ ${next.toLocaleTimeString()} (delay=${delay}ms)`);
+      // debugLog(`[tick] schedule next @ ${next.toLocaleTimeString()} (delay=${delay}ms)`);
       setTimeout(() => {
         const hh = String(next.getHours()).padStart(2, '0'); const mm = String(next.getMinutes()).padStart(2, '0'); const currentTime = `${hh}:${mm}`;
         const today = getTodayDateFormatted();
         const hasAlarms = !!(alarms && alarms.length > 0);
         const dateMatch = hasAlarms ? (alarms[0].date === today) : false;
         const timeMatch = hasAlarms && dateMatch ? alarms[0].times.includes(currentTime) : false;
-        debugLog(`[tick] now=${today} ${currentTime}, hasAlarms=${hasAlarms}, dateMatch=${dateMatch}, timeMatch=${timeMatch}`);
+        // debugLog(`[tick] now=${today} ${currentTime}, hasAlarms=${hasAlarms}, dateMatch=${dateMatch}, timeMatch=${timeMatch}`);
         if (hasAlarms && dateMatch && timeMatch) {
           const v = alarms[0].bellTypes[currentTime] ?? 1;
           const repeat = (typeof v === 'number') ? v : (bellConfig[String(v)] || 1); // 以 BellConfig 決定敲幾聲
@@ -238,7 +260,7 @@
         } else {
           if (!hasAlarms) debugLog('[tick] skip: no alarms');
           else if (!dateMatch) debugLog(`[tick] skip: date not match (first=${alarms[0]?.date}, today=${today})`);
-          else if (!timeMatch) debugLog(`[tick] skip: ${currentTime} not in [${alarms[0].times.join(', ')}]`);
+          // else if (!timeMatch) debugLog(`[tick] skip: ${currentTime} not in [${alarms[0].times.join(', ')}]`);
         }
         runEveryMinuteAtZeroSecond();
       }, delay);
