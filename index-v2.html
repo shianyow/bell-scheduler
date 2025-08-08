@@ -390,10 +390,8 @@
       const logDiv = document.getElementById('bell-log');
       if (!logDiv) return;
       const now = new Date();
-      const hh = String(now.getHours()).padStart(2, '0');
-      const mm = String(now.getMinutes()).padStart(2, '0');
-      const ss = String(now.getSeconds()).padStart(2, '0');
-      const msg = `[${hh}:${mm}:${ss}] ${type} 播放鐘聲 x${times}`;
+      const nowStr = now.toLocaleTimeString();
+      const msg = `[${nowStr}] ${type} 播放鐘聲 x${times}`;
       logDiv.innerHTML = `<div>${msg}</div>` + logDiv.innerHTML;
       const logs = logDiv.querySelectorAll('div');
       if (logs.length > 20) { for (let i = 20; i < logs.length; i++) logs[i].remove(); }
