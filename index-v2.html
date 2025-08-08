@@ -92,7 +92,10 @@
     }
   </style>
   <script>
-    function debugLog(msg) {
+    // Debug 等級：0=關閉, 1=一般, 2=詳細
+    function debugLog(msg, level = 1) {
+      const threshold = (typeof window !== 'undefined' && typeof window.__debugLevel === 'number') ? window.__debugLevel : 1;
+      if (level > threshold) return;
       const logDiv = document.getElementById('debug-log');
       const now = new Date().toLocaleTimeString();
       if (typeof msg !== 'string') msg = JSON.stringify(msg);
@@ -107,7 +110,8 @@
         }
         logDiv.scrollTop = logDiv.scrollHeight;
       }
-      console.log('[DEBUG]', msg);
+      // 僅在門檻內輸出到 console
+      try { console.log('[DEBUG]', msg); } catch (_) { }
     }
   </script>
 </head>
@@ -120,7 +124,15 @@
   <div class="container">
     <div id="status" class="status hidden"></div>
     <div id="audio-unlock" class="status">請點擊畫面以啟用鐘聲🔓</div>
-    <button id="debug-log-toggle" style="margin-bottom:8px;">顯示除錯紀錄</button>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
+      <button id="debug-log-toggle">顯示除錯紀錄</button>
+      <label for="debug-level-select" style="font-size:12px;color:#555;">Debug 等級：</label>
+      <select id="debug-level-select" style="font-size:12px;">
+        <option value="0">0 關閉</option>
+        <option value="1" selected>1 一般</option>
+        <option value="2">2 詳細</option>
+      </select>
+    </div>
     <div id="debug-log"
       style="display:none;background:#222;color:#0f0;font-size:12px;max-height:200px;overflow:auto;padding:8px;margin-bottom:12px;border-radius:6px;">
     </div>
@@ -394,7 +406,7 @@
       next.setMilliseconds(0);
       next.setMinutes(now.getMinutes() + 1);
       const delay = next - now;
-      // debugLog(`[tick] schedule next @ ${next.toLocaleTimeString()} (delay=${delay}ms)`);
+      debugLog(`[tick] schedule next @ ${next.toLocaleTimeString()} (delay=${delay}ms)`, 2);
       setTimeout(() => {
         // 在回呼當下重新取得時間，避免計時器提前於 :00 觸發造成誤判
         const t = new Date();
@@ -410,11 +422,11 @@
         const hasAlarms = !!(alarms && alarms.length > 0);
         const dateMatch = hasAlarms ? (alarms[0].date === today) : false;
         const timeMatch = hasAlarms && dateMatch ? alarms[0].times.includes(currentTime) : false;
-        // debugLog(`[tick] now=${today} ${currentTime}, hasAlarms=${hasAlarms}, dateMatch=${dateMatch}, timeMatch=${timeMatch}`);
+        debugLog(`[tick] now=${today} ${currentTime}, hasAlarms=${hasAlarms}, dateMatch=${dateMatch}, timeMatch=${timeMatch}` , 2);
         if (hasAlarms && dateMatch && timeMatch) {
           if (window.__lastAutoFireKey === currentKey) {
             // 已於本分鐘觸發過，避免重複
-            // debugLog(`[tick] duplicate suppressed for ${currentKey}`);
+            debugLog(`[tick] duplicate suppressed for ${currentKey}`, 2);
           } else {
             window.__lastAutoFireKey = currentKey;
             const v = alarms[0].bellTypes[currentTime] ?? 1;
@@ -425,7 +437,7 @@
         } else {
           if (!hasAlarms) debugLog('[tick] skip: no alarms');
           else if (!dateMatch) debugLog(`[tick] skip: date not match (first=${alarms[0]?.date}, today=${today})`);
-          // else if (!timeMatch) debugLog(`[tick] skip: ${currentTime} not in [${alarms[0].times.join(', ')}]`);
+          else if (!timeMatch) debugLog(`[tick] skip: ${currentTime} not in [${alarms[0].times.join(', ')}]`, 2);
         }
         runEveryMinuteAtZeroSecond();
       }, delay);
@@ -580,6 +592,23 @@
       debugLog(`Keepalive scheduled: ${min} min`);
     }
 
+    // 初始化 Debug Level：?debug=0|1|2 優先，其次 localStorage('debugLevel')，預設 1
+    (function initDebugLevel() {
+      try {
+        const qs = new URLSearchParams(window.location.search);
+        const stored = localStorage.getItem('debugLevel');
+        let level = 1;
+        if (qs.has('debug')) {
+          const v = Number(qs.get('debug'));
+          if (!Number.isNaN(v)) level = Math.max(0, Math.min(2, v));
+        } else if (stored !== null) {
+          const v = Number(stored);
+          if (!Number.isNaN(v)) level = Math.max(0, Math.min(2, v));
+        }
+        window.__debugLevel = level;
+      } catch (_) { window.__debugLevel = 1; }
+    })();
+
     document.addEventListener('DOMContentLoaded', () => {
       init();
       runEveryMinuteAtZeroSecond();
@@ -595,11 +624,22 @@
       // 除錯紀錄顯示/隱藏
       const toggleBtn = document.getElementById('debug-log-toggle');
       const debugDiv = document.getElementById('debug-log');
+      const levelSelect = document.getElementById('debug-level-select');
       if (toggleBtn && debugDiv) {
         toggleBtn.addEventListener('click', () => {
           const isHidden = (debugDiv.style.display === 'none');
           debugDiv.style.display = isHidden ? 'block' : 'none';
           toggleBtn.textContent = isHidden ? '隱藏除錯紀錄' : '顯示除錯紀錄';
+        });
+      }
+      if (levelSelect) {
+        try { levelSelect.value = String(window.__debugLevel ?? 1); } catch (_) {}
+        levelSelect.addEventListener('change', (e) => {
+          const v = Number(e.target.value);
+          const lvl = (!Number.isNaN(v)) ? Math.max(0, Math.min(2, v)) : 1;
+          window.__debugLevel = lvl;
+          try { localStorage.setItem('debugLevel', String(lvl)); } catch (_) {}
+          debugLog(`Debug level set to ${lvl}`, 0);
         });
       }
     });
