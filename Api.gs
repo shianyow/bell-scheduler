@@ -31,8 +31,8 @@ function exportBellScheduleJSONV2() {
         .map(row => ({ startDate: formatDate(row[0]), courseType: String(row[1]).trim() }));
     }
 
-    // 2) NewCourseType -> courseTypeDaysMap
-    const nctSheet = ss.getSheetByName('NewCourseType');
+    // 2) CourseType -> courseTypeDaysMap
+    const nctSheet = ss.getSheetByName('CourseType');
     const courseTypeDaysMap = {};
     if (nctSheet && nctSheet.getLastRow() > 1 && nctSheet.getLastColumn() > 1) {
       const rows = nctSheet.getRange(1, 1, nctSheet.getLastRow(), nctSheet.getLastColumn()).getValues();
@@ -50,10 +50,10 @@ function exportBellScheduleJSONV2() {
       }
     }
 
-    // 3) NewDailyPatternBell_<ct> -> bellsByCourseType
+    // 3) DailyPatternBell_<ct> -> bellsByCourseType
     const bellsByCourseType = {};
     Object.keys(courseTypeDaysMap).forEach(ct => {
-      const sheetName = `NewDailyPatternBell_${ct}`;
+      const sheetName = `DailyPatternBell_${ct}`;
       const sheet = ss.getSheetByName(sheetName);
       const map = {};
       if (sheet && sheet.getLastRow() > 1 && sheet.getLastColumn() > 1) {
@@ -108,7 +108,7 @@ function exportBellScheduleJSONV2() {
   }
 }
 
-// v2 API：基於 NewCourseType + NewDailyPatternBell_* 的新資料結構
+// v2 API：基於 CourseType + DailyPatternBell_* 的新資料結構
 // 回傳格式：
 // {
 //   schedules: [
@@ -135,8 +135,8 @@ function handleCourseRequestV2() {
         .map(row => ({ startDate: formatDate(row[0]), courseType: String(row[1]).trim() }));
     }
 
-    // 2) 讀取 NewCourseType：建立 courseType -> [patternKey by dayIndex]
-    const nctSheet = ss.getSheetByName('NewCourseType');
+    // 2) 讀取 CourseType：建立 courseType -> [patternKey by dayIndex]
+    const nctSheet = ss.getSheetByName('CourseType');
     const courseTypeDaysMap = {}; // { courseType: [patternKey ...] }
     if (nctSheet && nctSheet.getLastRow() > 1 && nctSheet.getLastColumn() > 1) {
       const rows = nctSheet.getRange(1, 1, nctSheet.getLastRow(), nctSheet.getLastColumn()).getValues();
@@ -160,11 +160,11 @@ function handleCourseRequestV2() {
       }
     }
 
-    // 3) 讀取 NewDailyPatternBell_<courseType>：建立 patternKey -> bells[]
+    // 3) 讀取 DailyPatternBell_<courseType>：建立 patternKey -> bells[]
     //    bells[] = [{ time: "HH:mm", bellType: string }]
     const bellsByCourseType = {}; // { ct: { patternKey: bells[] } }
     Object.keys(courseTypeDaysMap).forEach(ct => {
-      const sheetName = `NewDailyPatternBell_${ct}`;
+      const sheetName = `DailyPatternBell_${ct}`;
       const sheet = ss.getSheetByName(sheetName);
       const map = {};
       if (sheet && sheet.getLastRow() > 1 && sheet.getLastColumn() > 1) {
