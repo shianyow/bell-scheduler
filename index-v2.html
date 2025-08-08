@@ -87,30 +87,62 @@
     .date-block {
       border: 1px solid #ccc;
       padding: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       background: #fff;
     }
+    /* 今日強調 */
+    .date-block.today {
+      border-left: 4px solid #28a745; /* 綠色左邊條 */
+      background: #f5fff7;            /* 很淡的綠底 */
+    }
+    /* 控制列置頂 */
+    .controls {
+      position: sticky;
+      top: 0;
+      background: #fff;
+      z-index: 5;
+      padding: 8px 0;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, .04);
+    }
+    /* Logs 固定高度與滾動 */
+    #bell-log, #debug-log {
+      max-height: 200px;
+      overflow: auto;
+    }
+    /* 狀態列 + 工具按鈕排列 */
+    .status-row { display: flex; align-items: center; gap: 8px; }
+    .status-row .spacer { flex: 1; }
+    .tool-btn { background: transparent; border: 1px solid #ddd; color: #555; padding: 2px 10px; border-radius: 4px; font-size: inherit; }
+    .tool-btn:hover { background: #f3f3f3; }
+    .tool-btn.active { background: #eef6ff; color: #0b74da; border-color: #b6dbff; }
+    /* Debug 區塊固定標頭 */
+    #debug-log { background:#222; color:#0f0; }
+    #debug-log .debug-header { position: sticky; top: 0; background:#111; color:#9f9; padding:6px 8px; border-bottom:1px solid #333; display:flex; align-items:center; gap:8px; z-index:1; }
+    #debug-log .debug-header label { font-size:12px; color:#9f9; }
+    #debug-entries { padding:8px; font-size:12px; }
   </style>
   <script>
     // Debug 等級：0=關閉, 1=一般, 2=詳細
     function debugLog(msg, level = 1) {
-      const threshold = (typeof window !== 'undefined' && typeof window.__debugLevel === 'number') ? window.__debugLevel : 1;
+      const threshold = window.__debugLevel ?? 1;
       if (level > threshold) return;
-      const logDiv = document.getElementById('debug-log');
       const now = new Date().toLocaleTimeString();
+      const entries = document.getElementById('debug-entries');
       if (typeof msg !== 'string') msg = JSON.stringify(msg);
-      if (logDiv) {
-        logDiv.innerHTML += `<div>[${now}] ${msg}</div>`;
+      if (entries) {
+        const row = document.createElement('div');
+        row.textContent = `[${now}] ${msg}`;
+        entries.appendChild(row);
         // 限制最大行數，避免長時間運行造成 DOM 過大
         const MAX_DEBUG_LINES = 200;
-        const nodes = logDiv.querySelectorAll('div');
+        const nodes = entries.querySelectorAll('div');
         const overflow = nodes.length - MAX_DEBUG_LINES;
         if (overflow > 0) {
           for (let i = 0; i < overflow; i++) nodes[i].remove();
         }
-        logDiv.scrollTop = logDiv.scrollHeight;
+        const container = document.getElementById('debug-log');
+        if (container) container.scrollTop = container.scrollHeight;
       }
-      // 僅在門檻內輸出到 console
       try { console.log('[DEBUG]', msg); } catch (_) { }
     }
   </script>
@@ -122,19 +154,23 @@
   </button>
 
   <div class="container">
-    <div id="status" class="status hidden"></div>
-    <div id="audio-unlock" class="status">請點擊畫面以啟用鐘聲🔓</div>
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
-      <button id="debug-log-toggle">顯示除錯紀錄</button>
-      <label for="debug-level-select" style="font-size:12px;color:#555;">Debug 等級：</label>
-      <select id="debug-level-select" style="font-size:12px;">
-        <option value="0">0 關閉</option>
-        <option value="1" selected>1 一般</option>
-        <option value="2">2 詳細</option>
-      </select>
+    <div class="status-row" style="margin-bottom:8px;">
+      <div id="status" class="status hidden"></div>
+      <div class="spacer"></div>
+      <button id="tools-btn" class="tool-btn" title="顯示 Debug Log">🔎</button>
     </div>
-    <div id="debug-log"
-      style="display:none;background:#222;color:#0f0;font-size:12px;max-height:200px;overflow:auto;padding:8px;margin-bottom:12px;border-radius:6px;">
+    <div id="audio-unlock" class="status">請點擊畫面以啟用鐘聲🔓</div>
+    <div id="debug-log" style="display:none; max-height:200px; overflow:auto; margin-bottom:12px; border-radius:6px;">
+      <div class="debug-header">
+        <span style="font-weight:600;">Debug Log</span>
+        <div class="spacer"></div>
+        <select id="debug-level-select" style="font-size:12px; background:#1a1a1a; color:#9f9; border:1px solid #333; border-radius:4px; padding:2px 6px;">
+          <option value="0">0 關閉</option>
+          <option value="1" selected>1 一般</option>
+          <option value="2">2 詳細</option>
+        </select>
+      </div>
+      <div id="debug-entries"></div>
     </div>
     <div id="bell-log" style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:8px;margin-bottom:12px;">
     </div>
@@ -260,9 +296,10 @@
 
     function renderAlarms() {
       dateList.innerHTML = '';
+      const todayStr = getTodayDateFormatted();
       alarms.forEach(a => {
         const block = document.createElement('div');
-        block.className = 'date-block';
+        block.className = 'date-block' + (a.date === todayStr ? ' today' : '');
         block.innerHTML = `<h3>${a.date}</h3><p>🔔 ${a.times.join(', ')}</p>`;
         dateList.appendChild(block);
       });
@@ -619,25 +656,25 @@
       // 也立即做一次 keepalive
       checkSystemStatus();
 
-      // 除錯紀錄顯示/隱藏
-      const toggleBtn = document.getElementById('debug-log-toggle');
+      // 小工具按鈕：明確作為 Debug 開/關，並固定 header 內含等級選單
+      const toolsBtn = document.getElementById('tools-btn');
       const debugDiv = document.getElementById('debug-log');
-      const levelSelect = document.getElementById('debug-level-select');
-      if (toggleBtn && debugDiv) {
-        toggleBtn.addEventListener('click', () => {
-          const isHidden = (debugDiv.style.display === 'none');
-          debugDiv.style.display = isHidden ? 'block' : 'none';
-          toggleBtn.textContent = isHidden ? '隱藏除錯紀錄' : '顯示除錯紀錄';
-        });
-      }
-      if (levelSelect) {
-        try { levelSelect.value = String(window.__debugLevel ?? 1); } catch (_) {}
-        levelSelect.addEventListener('change', (e) => {
+      const debugLevelSel = document.getElementById('debug-level-select');
+      if (debugLevelSel) {
+        try { debugLevelSel.value = String(window.__debugLevel ?? 1); } catch (_) {}
+        debugLevelSel.addEventListener('change', (e) => {
           const v = Number(e.target.value);
           const lvl = (!Number.isNaN(v)) ? Math.max(0, Math.min(2, v)) : 1;
           window.__debugLevel = lvl;
           try { localStorage.setItem('debugLevel', String(lvl)); } catch (_) {}
           debugLog(`Debug level set to ${lvl}`, 0);
+        });
+      }
+      if (toolsBtn && debugDiv) {
+        toolsBtn.addEventListener('click', () => {
+          const isHidden = (debugDiv.style.display === 'none' || debugDiv.style.display === '');
+          if (isHidden) { debugDiv.style.display = 'block'; toolsBtn.classList.add('active'); toolsBtn.title = '隱藏除錯紀錄'; }
+          else { debugDiv.style.display = 'none'; toolsBtn.classList.remove('active'); toolsBtn.title = '顯示除錯紀錄'; }
         });
       }
     });
