@@ -15,6 +15,225 @@ function handleCourseRequest() {
   }
 }
 
+// 匯出 v2 課程排程（純物件），供 google.script.run 直接呼叫
+function exportBellScheduleJSONV2() {
+  try {
+    updateStatusEvent('LastGetCourseSchedule');
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // 1) CourseSchedule
+    let courseSchedule = [];
+    const scheduleSheet = ss.getSheetByName("CourseSchedule");
+    if (scheduleSheet && scheduleSheet.getLastRow() > 1) {
+      const scheduleData = scheduleSheet.getRange(2, 1, scheduleSheet.getLastRow() - 1, 2).getValues();
+      courseSchedule = scheduleData
+        .filter(row => row[0] && row[1])
+        .map(row => ({ startDate: formatDate(row[0]), courseType: String(row[1]).trim() }));
+    }
+
+    // 2) NewCourseType -> courseTypeDaysMap
+    const nctSheet = ss.getSheetByName('NewCourseType');
+    const courseTypeDaysMap = {};
+    if (nctSheet && nctSheet.getLastRow() > 1 && nctSheet.getLastColumn() > 1) {
+      const rows = nctSheet.getRange(1, 1, nctSheet.getLastRow(), nctSheet.getLastColumn()).getValues();
+      const header = rows[0];
+      const courseTypes = header.slice(1).map(h => String(h).trim()).filter(h => h);
+      courseTypes.forEach(ct => courseTypeDaysMap[ct] = []);
+      for (let r = 1; r < rows.length; r++) {
+        const row = rows[r];
+        for (let c = 1; c < header.length; c++) {
+          const ct = String(header[c]).trim();
+          if (!ct) continue;
+          const patternKey = String(row[c] || '').trim();
+          if (patternKey !== '') courseTypeDaysMap[ct].push(patternKey);
+        }
+      }
+    }
+
+    // 3) NewDailyPatternBell_<ct> -> bellsByCourseType
+    const bellsByCourseType = {};
+    Object.keys(courseTypeDaysMap).forEach(ct => {
+      const sheetName = `NewDailyPatternBell_${ct}`;
+      const sheet = ss.getSheetByName(sheetName);
+      const map = {};
+      if (sheet && sheet.getLastRow() > 1 && sheet.getLastColumn() > 1) {
+        const values = sheet.getRange(1, 1, sheet.getLastRow(), sheet.getLastColumn()).getValues();
+        const header = values[0];
+        const patternKeys = header.slice(1).map(h => String(h).trim()).filter(h => h);
+        patternKeys.forEach(pk => map[pk] = []);
+        for (let r = 1; r < values.length; r++) {
+          const row = values[r];
+          const time = row[0] ? formatTime(row[0]) : '';
+          if (!time) continue;
+          for (let c = 1; c < header.length; c++) {
+            const pk = String(header[c]).trim();
+            if (!pk) continue;
+            const val = row[c];
+            if (val !== '' && val !== null && val !== undefined) {
+              const num = Number(val);
+              if ((typeof val === 'number' && !isNaN(num) && num > 0) || (typeof val !== 'number' && String(val).trim() !== '' && String(val).trim() !== '0')) {
+                map[pk].push({ time: time, bellType: String(val).trim() });
+              }
+            }
+          }
+        }
+        Object.keys(map).forEach(pk => { map[pk].sort((a,b)=> a.time.localeCompare(b.time)); });
+      }
+      bellsByCourseType[ct] = map;
+    });
+
+    // 4) BellConfig -> 次數
+    const bellConfig = {};
+    const bellConfigSheet = ss.getSheetByName('BellConfig');
+    if (bellConfigSheet && bellConfigSheet.getLastRow() > 1) {
+      const rows = bellConfigSheet.getRange(2, 1, bellConfigSheet.getLastRow() - 1, Math.max(2, bellConfigSheet.getLastColumn())).getValues();
+      rows.forEach(r => {
+        const key = String(r[0] || '').trim();
+        if (!key) return;
+        const maybeNum = Number(r[1]);
+        if (!isNaN(maybeNum) && maybeNum > 0) bellConfig[key] = maybeNum;
+      });
+    }
+
+    // 5) 回傳結構
+    return {
+      CourseSchedule: courseSchedule,
+      CourseTypeDays: courseTypeDaysMap,
+      DailyPatternBells: bellsByCourseType,
+      BellConfig: bellConfig,
+      generatedAt: formatDateTime(new Date())
+    };
+  } catch (error) {
+    return { error: '資料載入失敗 (v2)', message: error.toString(), CourseSchedule: [], CourseTypeDays: {}, DailyPatternBells: {}, BellConfig: {}, generatedAt: formatDateTime(new Date()) };
+  }
+}
+
+// v2 API：基於 NewCourseType + NewDailyPatternBell_* 的新資料結構
+// 回傳格式：
+// {
+//   schedules: [
+//     {
+//       startDate: "yyyy-MM-dd",
+//       courseType: "10day",
+//       days: [ { day: 0, patternKey: "10day_opening", bells: [ { time: "04:00", count: 1 }, ... ] } ]
+//     }
+//   ],
+//   generatedAt: "yyyy-MM-dd HH:mm:ss"
+// }
+function handleCourseRequestV2() {
+  try {
+    updateStatusEvent('LastGetCourseSchedule');
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // 1) CourseSchedule（沿用舊表）
+    let courseSchedule = [];
+    const scheduleSheet = ss.getSheetByName("CourseSchedule");
+    if (scheduleSheet && scheduleSheet.getLastRow() > 1) {
+      const scheduleData = scheduleSheet.getRange(2, 1, scheduleSheet.getLastRow() - 1, 2).getValues();
+      courseSchedule = scheduleData
+        .filter(row => row[0] && row[1])
+        .map(row => ({ startDate: formatDate(row[0]), courseType: String(row[1]).trim() }));
+    }
+
+    // 2) 讀取 NewCourseType：建立 courseType -> [patternKey by dayIndex]
+    const nctSheet = ss.getSheetByName('NewCourseType');
+    const courseTypeDaysMap = {}; // { courseType: [patternKey ...] }
+    if (nctSheet && nctSheet.getLastRow() > 1 && nctSheet.getLastColumn() > 1) {
+      const rows = nctSheet.getRange(1, 1, nctSheet.getLastRow(), nctSheet.getLastColumn()).getValues();
+      // 第一列為表頭：A=Day, B..=courseType 名
+      const header = rows[0];
+      const courseTypes = header.slice(1).map(h => String(h).trim()).filter(h => h);
+      // 初始化
+      courseTypes.forEach(ct => courseTypeDaysMap[ct] = []);
+      // 從第2列開始：逐日讀取
+      for (let r = 1; r < rows.length; r++) {
+        const row = rows[r];
+        // day = row[0]
+        for (let c = 1; c < header.length; c++) {
+          const ct = String(header[c]).trim();
+          if (!ct) continue;
+          const patternKey = String(row[c] || '').trim();
+          if (patternKey !== '') {
+            courseTypeDaysMap[ct].push(patternKey);
+          }
+        }
+      }
+    }
+
+    // 3) 讀取 NewDailyPatternBell_<courseType>：建立 patternKey -> bells[]
+    //    bells[] = [{ time: "HH:mm", bellType: string }]
+    const bellsByCourseType = {}; // { ct: { patternKey: bells[] } }
+    Object.keys(courseTypeDaysMap).forEach(ct => {
+      const sheetName = `NewDailyPatternBell_${ct}`;
+      const sheet = ss.getSheetByName(sheetName);
+      const map = {};
+      if (sheet && sheet.getLastRow() > 1 && sheet.getLastColumn() > 1) {
+        const values = sheet.getRange(1, 1, sheet.getLastRow(), sheet.getLastColumn()).getValues();
+        const header = values[0]; // A=Time, B..=patternKey
+        const patternKeys = header.slice(1).map(h => String(h).trim()).filter(h => h);
+        // 建立空陣列
+        patternKeys.forEach(pk => map[pk] = []);
+        for (let r = 1; r < values.length; r++) {
+          const row = values[r];
+          const time = row[0] ? formatTime(row[0]) : '';
+          if (!time) continue;
+          for (let c = 1; c < header.length; c++) {
+            const pk = String(header[c]).trim();
+            if (!pk) continue;
+            const val = row[c];
+            // 允許數字或字串，皆視為 bellType；空白或 0 視為無
+            if (val !== '' && val !== null && val !== undefined) {
+              const num = Number(val);
+              if ((typeof val === 'number' && !isNaN(num) && num > 0) || (typeof val !== 'number' && String(val).trim() !== '' && String(val).trim() !== '0')) {
+                map[pk].push({ time: time, bellType: String(val).trim() });
+              }
+            }
+          }
+        }
+        // 依時間排序
+        Object.keys(map).forEach(pk => {
+          map[pk].sort((a, b) => a.time.localeCompare(b.time));
+        });
+      }
+      bellsByCourseType[ct] = map;
+    });
+
+    // 4) 讀取 BellConfig
+    const bellConfig = {};
+    const bellConfigSheet = ss.getSheetByName('BellConfig');
+    if (bellConfigSheet && bellConfigSheet.getLastRow() > 1) {
+      const rows = bellConfigSheet.getRange(2, 1, bellConfigSheet.getLastRow() - 1, Math.max(2, bellConfigSheet.getLastColumn())).getValues();
+      rows.forEach(r => {
+        const key = String(r[0] || '').trim();
+        if (!key) return;
+        const maybeNum = Number(r[1]);
+        if (!isNaN(maybeNum) && maybeNum > 0) {
+          bellConfig[key] = maybeNum;
+        }
+      });
+    }
+
+    // 5) 回傳結構
+    return createJsonResponse({
+      CourseSchedule: courseSchedule,
+      CourseTypeDays: courseTypeDaysMap,
+      DailyPatternBells: bellsByCourseType,
+      BellConfig: bellConfig,
+      generatedAt: formatDateTime(new Date())
+    });
+  } catch (error) {
+    return createJsonResponse({
+      error: '資料載入失敗 (v2)',
+      message: error.toString(),
+      CourseSchedule: [],
+      CourseTypeDays: {},
+      DailyPatternBells: {},
+      BellConfig: {},
+      generatedAt: formatDateTime(new Date())
+    });
+  }
+}
+
 // 工具函式：建立 JSON 回應
 function createJsonResponse(data) {
   return ContentService
