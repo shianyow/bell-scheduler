@@ -135,7 +135,7 @@
 
   <script>
     // 內嵌鐘聲音檔（與舊版一致）
-    <?!= include('belljs') ?>
+    <?!= include('bell2nrjs') ?>
 
     const dateList = document.getElementById('date-list');
     const alarmSound = document.getElementById('alarm-sound');
@@ -146,19 +146,89 @@
     alarmSound.muted = false;
     alarmSound.volume = 1.0;
 
+    // Web Audio（iOS 友善）：單一 AudioContext、預先解碼音檔，之後用 BufferSource 疊加播放
+    let audioCtx = null;      // AudioContext
+    let bellBuffer = null;    // 解碼後的 AudioBuffer
+    let gainNode = null;      // 音量控制
+
     // 音訊解鎖
     const audioUnlockDiv = document.getElementById('audio-unlock');
     let audioUnlocked = false;
     function showAudioUnlockMsg(msg) { audioUnlockDiv.textContent = msg; audioUnlockDiv.classList.remove('hidden'); }
     function hideAudioUnlockMsg() { audioUnlockDiv.classList.add('hidden'); }
-    function unlockAudio() {
+    async function unlockAudio() {
       if (audioUnlocked) return;
-      alarmSound.muted = true;
-      alarmSound.play().then(() => { alarmSound.pause(); alarmSound.currentTime = 0; alarmSound.muted = false; audioUnlocked = true; showAudioUnlockMsg('音訊已解鎖！🔊'); setTimeout(hideAudioUnlockMsg, 1200); })
-        .catch(() => showAudioUnlockMsg('請點擊畫面以啟用鐘聲🔓'));
+      try {
+        // 1) 嘗試建立/恢復 Web Audio Context
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) {
+          if (!audioCtx) {
+            audioCtx = new AC();
+            gainNode = audioCtx.createGain();
+            gainNode.gain.value = 1.0;
+            gainNode.connect(audioCtx.destination);
+          }
+          if (audioCtx.state === 'suspended') { await audioCtx.resume(); }
+          // 2) 預先解碼 BELL_BASE64（先 atob，再失敗時 fallback fetch）
+          if (!bellBuffer) {
+            let decoded = false;
+            try {
+              const commaIdx = BELL_BASE64.indexOf(',');
+              const b64 = commaIdx >= 0 ? BELL_BASE64.slice(commaIdx + 1) : BELL_BASE64;
+              const binary = atob(b64);
+              const len = binary.length;
+              const bytes = new Uint8Array(len);
+              for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+              debugLog(`Decoding bell buffer (atob), bytes=${len}`);
+              bellBuffer = await new Promise((res, rej) => { audioCtx.decodeAudioData(bytes.buffer, res, rej); });
+              decoded = true;
+              debugLog(`Bell buffer decoded (atob): duration=${bellBuffer.duration.toFixed(2)}s`);
+            } catch (e1) {
+              debugLog('decodeAudioData via atob failed: ' + (e1?.message || e1));
+              try {
+                const resp = await fetch(BELL_BASE64);
+                const arr = await resp.arrayBuffer();
+                debugLog(`Decoding bell buffer (fetch), bytes=${arr.byteLength}`);
+                bellBuffer = await new Promise((res, rej) => { audioCtx.decodeAudioData(arr, res, rej); });
+                decoded = true;
+                debugLog(`Bell buffer decoded (fetch): duration=${bellBuffer.duration.toFixed(2)}s`);
+              } catch (e2) {
+                debugLog('decodeAudioData via fetch failed: ' + (e2?.message || e2));
+              }
+            }
+            if (!decoded) {
+              debugLog('Bell buffer not decoded, will fallback to HTMLAudio path.');
+            }
+          }
+        }
+        // 3) 同時也嘗試解鎖 HTMLAudio（做為後援）
+        try {
+          alarmSound.muted = true;
+          await alarmSound.play();
+          alarmSound.pause(); alarmSound.currentTime = 0; alarmSound.muted = false;
+        } catch (_) { /* ignore */ }
+
+        audioUnlocked = true;
+        showAudioUnlockMsg('音訊已解鎖！🔊');
+        setTimeout(hideAudioUnlockMsg, 1200);
+      } catch (_) {
+        showAudioUnlockMsg('請點擊畫面以啟用鐘聲🔓');
+      }
     }
     window.addEventListener('touchstart', unlockAudio, { once: true });
     window.addEventListener('click', unlockAudio, { once: true });
+
+    // 等待音訊解鎖（避免首次點擊時解鎖與播放競態）
+    async function ensureAudioUnlocked(timeoutMs = 1200) {
+      if (audioUnlocked) return true;
+      try { await unlockAudio(); } catch (_) { }
+      const start = Date.now();
+      while (!audioUnlocked && (Date.now() - start) < timeoutMs) {
+        await new Promise(r => setTimeout(r, 50));
+      }
+      if (!audioUnlocked) { showAudioUnlockMsg('請點擊畫面以啟用鐘聲🔓'); }
+      return audioUnlocked;
+    }
 
     // 狀態顯示
     function showStatus(message, type = 'loading') {
@@ -202,27 +272,103 @@
 
     // bell 播放
     let isAlarmPlaying = false; let pendingNextTimeout = null;
+    // 第一聲音量設定（可調）
+    const FIRST_STRIKE_VOLUME = 0.20;   // 第一聲目標音量（其餘為 1.0）
+    const FIRST_STRIKE_ATTACK_MUTE_MS = 0; // 第一聲前 30ms 靜音（非淡入），降低起始敲擊感
+    // 追蹤目前正在播放的音軌
+    const activeAudios = new Set();    // HTMLAudioElement 實例
+    const activeSources = new Set();   // Web Audio BufferSource 實例
     function playVisualAlarm(enable = true) { const btn = document.querySelector('.play-button'); enable ? btn.classList.add('flash') : btn.classList.remove('flash'); }
     function updatePlayButton(isPlaying = false) { const t = document.querySelector('.play-text'); if (!t) return; t.innerHTML = isPlaying ? '點此停止鐘聲<br/>⏹️' : '點此手動敲鐘<br/>▶️'; }
     function playSingleAlarm(current, total) {
-      // 先移除舊的 onended，再於 ended 時呼叫 load()，避免多重觸發
-      alarmSound.onended = null;
-      alarmSound.onended = function () {
-        alarmSound.load();
-      };
-      alarmSound.play()
-        .catch((e) => debugLog('play error:' + e));
-      debugLog(`Bell played: ${current}/${total}`);
+      // 尚未解鎖時避免觸發瀏覽器限制
+      if (!audioUnlocked) { showAudioUnlockMsg('請點擊畫面以啟用鐘聲🔓'); return; }
+      // 優先使用 Web Audio（iOS 更穩定），否則退回 HTMLAudio
+      if (audioCtx && bellBuffer) {
+        try {
+          if (audioCtx.state === 'suspended') { audioCtx.resume().catch(() => { }); }
+          const src = audioCtx.createBufferSource();
+          src.buffer = bellBuffer;
+          // 針對每一聲建立獨立增益控制：第一聲 0.5，其餘 1.0（不影響其他同時播放的音軌）
+          const perStrikeGain = audioCtx.createGain();
+          const t0 = audioCtx.currentTime;
+          const vol = (current === 1 ? FIRST_STRIKE_VOLUME : 1.0);
+          if (current === 1) {
+            // iOS 可感知：先靜音一小段再切到目標音量（步進，非淡入）
+            perStrikeGain.gain.setValueAtTime(0.0, t0);
+            perStrikeGain.gain.setValueAtTime(vol, t0 + FIRST_STRIKE_ATTACK_MUTE_MS / 1000);
+          } else {
+            perStrikeGain.gain.setValueAtTime(1.0, t0);
+          }
+          src.connect(perStrikeGain);
+          perStrikeGain.connect(gainNode || audioCtx.destination);
+          activeSources.add(src);
+          src.onended = function () { try { src.disconnect(); } catch (_) { } activeSources.delete(src); };
+          // 稍微延遲啟動，確保增益已設定（iOS 相容性）
+          src.start(t0 + 0.01);
+          debugLog(`Bell played (WebAudio): ${current}/${total} vol=${vol}`);
+          return;
+        } catch (e) {
+          debugLog('webaudio play error:' + e);
+        }
+      }
+      // 後援：HTMLAudio 新實例（注意：未解鎖時會被阻擋，因此前面已 return）
+      const a = new Audio();
+      a.src = BELL_BASE64;
+      a.muted = false;
+      if (current === 1) {
+        // HTMLAudio：先靜音 30ms，再切到目標音量（步進）
+        a.volume = 0.0;
+        setTimeout(() => { try { a.volume = FIRST_STRIKE_VOLUME; } catch (_) {} }, FIRST_STRIKE_ATTACK_MUTE_MS);
+      } else {
+        a.volume = 1.0;
+      }
+      activeAudios.add(a);
+      a.onended = function () { try { a.src = ''; } catch (_) { } activeAudios.delete(a); };
+      a.play().catch((e) => debugLog('play error:' + e));
+      debugLog(`Bell played (HTMLAudio): ${current}/${total} vol=${current === 1 ? FIRST_STRIKE_VOLUME : 1.0}`);
     }
-    function stopAlarm() { if (!isAlarmPlaying) return; if (pendingNextTimeout) { clearTimeout(pendingNextTimeout); pendingNextTimeout = null; } alarmSound.pause(); alarmSound.currentTime = 0; playVisualAlarm(false); updatePlayButton(false); isAlarmPlaying = false; }
-    function playAlarmSequence(times = 1, trigger = '自動') {
-      if (times < 1) return; isAlarmPlaying = true; playVisualAlarm(true); updatePlayButton(true); let count = 0; const gapMs = 300; const bellDuration = 16;
+    function stopAlarm() {
+      if (!isAlarmPlaying) return;
+      if (pendingNextTimeout) { clearTimeout(pendingNextTimeout); pendingNextTimeout = null; }
+      // 停止所有還在播放的 HTMLAudio 實例
+      activeAudios.forEach((a) => {
+        try { a.pause(); } catch (_) { }
+        try { a.src = ''; } catch (_) { }
+      });
+      activeAudios.clear();
+      // 停止所有 Web Audio BufferSource
+      activeSources.forEach((s) => { try { s.stop(0); } catch (_) { } try { s.disconnect(); } catch (_) { } });
+      activeSources.clear();
+      // 同時也重置預載用的 alarmSound（保持原有行為）
+      try { alarmSound.pause(); alarmSound.currentTime = 0; } catch (_) { }
+      playVisualAlarm(false);
+      updatePlayButton(false);
+      isAlarmPlaying = false;
+    }
+    async function playAlarmSequence(times = 1, trigger = '自動') {
+      if (times < 1) return;
+      // 先確保已解鎖
+      const ok = await ensureAudioUnlocked();
+      if (!ok) return;
+      // 嘗試恢復被暫停的 AudioContext
+      if (audioCtx && audioCtx.state === 'suspended') { try { await audioCtx.resume(); } catch (_) { } }
+      isAlarmPlaying = true; playVisualAlarm(true); updatePlayButton(true);
+      let count = 0;
+      // 每聲之間的觸發間隔（毫秒）。需求：每 15 秒一聲（音檔約 17 秒，會產生適度重疊）。
+      const strikeIntervalMs = 15000;
       // 鐘聲播放紀錄（與舊版一致）
       logBellPlay(trigger, times);
-      function playNext() { if (!isAlarmPlaying) return; if (count >= times) { playVisualAlarm(false); updatePlayButton(false); isAlarmPlaying = false; return; } playSingleAlarm(count + 1, times); count++; pendingNextTimeout = setTimeout(playNext, (bellDuration * 1000) + gapMs); }
+      function playNext() {
+        if (!isAlarmPlaying) return;
+        if (count >= times) { playVisualAlarm(false); updatePlayButton(false); isAlarmPlaying = false; return; }
+        playSingleAlarm(count + 1, times);
+        count++;
+        pendingNextTimeout = setTimeout(playNext, strikeIntervalMs);
+      }
       playNext();
     }
-    function playAlarm() { if (isAlarmPlaying) stopAlarm(); else playAlarmSequence(4, '手動'); }
+    async function playAlarm() { if (isAlarmPlaying) stopAlarm(); else await playAlarmSequence(4, '手動'); }
 
     function deletePastAlarms() { const today = getTodayDateFormatted(); alarms = alarms.filter(a => a.date >= today); }
     function sortAlarms() { alarms.sort((a, b) => new Date(a.date) - new Date(b.date)); alarms.forEach(a => a.times.sort((x, y) => x.localeCompare(y))); }
