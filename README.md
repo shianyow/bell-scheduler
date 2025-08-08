@@ -19,7 +19,8 @@
 ### 檔案結構
 ```
 bell-scheduler/
-├── index.html         # 主要管理介面
+├── index-v2.html      # 前端（v2）
+├── index.html         #（可選）備用頁面
 ├── test.html          # 後端測試介面
 ├── Route.gs           # 路由處理和 HTTP 請求分發
 ├── Api.gs             # 主要 API 邏輯和資料處理
@@ -103,12 +104,11 @@ bell-scheduler/
 
 ### 🌐 Web 介面訪問
 
-系統提供兩個不同的 Web 介面：
-
 | URL | 介面 | 用途 |
 |-----|------|------|
-| `你的網址` | `index.html` | 🏠 **主要管理介面** - 日常管理使用 |
-| `你的網址?path=test` | `test.html` | 🔧 **後端測試介面** - API 測試和除錯 |
+| `你的網址` | `index-v2.html` | 🏠 **前端（v2，預設）** - 顯示課表與自動敲鐘 |
+| `你的網址?path=v2` | `index-v2.html` | 🔗 與 root 相同的新版入口 |
+| `你的網址?path=test` | `test.html` | 🔧 **後端測試介面** - API 測試與除錯 |
 
 ### 🔧 測試介面功能
 
@@ -154,38 +154,32 @@ bell-scheduler/
 
 ### 🔌 API 端點
 
-#### `GET /?path=course`
-獲取完整的課程排程資料
+#### `GET /?path=v2/course`
+取得 v2 compact 課表資料（前端自行展開）。
 
-**回應格式：**
+結構說明：
+- `CourseSchedule`: `[{ startDate: 'YYYY-MM-DD', courseType: string }]`
+- `CourseTypeDays`: `{ [courseType: string]: string[] }` 第 N 天對應的每日模式鍵（patternKey）。
+- `DailyPatternBells`: `{ [courseType: string]: { [patternKey: string]: [{ time: 'HH:MM', bellType?: string, count?: number }] } }`
+- `BellConfig`: `{ [bellType: string]: number }` 定義各 bellType 的重複敲擊次數。
+
+回應範例：
 ```json
 {
   "CourseSchedule": [
-    {
-      "startDate": "2025-08-01",
-      "courseType": "正常課程"
-    }
+    { "startDate": "2025-08-01", "courseType": "正常課程" }
   ],
-  "CourseTypes": {
-    "正常課程": [
-      {
-        "day": 1,
-        "dailyPattern": "標準模式"
-      }
-    ]
+  "CourseTypeDays": {
+    "正常課程": ["D1", "D2"]
   },
-  "DailyPatterns": {
-    "標準模式": [
-      {
-        "time": "08:00",
-        "bellType": "1"
-      }
-    ]
+  "DailyPatternBells": {
+    "正常課程": {
+      "D1": [ { "time": "08:00", "bellType": "A" }, { "time": "08:10", "count": 2 } ],
+      "D2": [ { "time": "09:00", "bellType": "B" } ]
+    }
   },
-  "BellConfig": {
-    "1": "https://example.com/bell1.mp3",
-    "2": "https://example.com/bell2.mp3"
-  }
+  "BellConfig": { "A": 4, "B": 2 },
+  "generatedAt": "2025-08-01 12:00:00"
 }
 ```
 
@@ -230,6 +224,12 @@ Status 工作表會記錄系統關鍵事件的最後異動時間，例如：
 }
 ```
 - 前端可比對 `lastDataChange` 判斷是否需要重新下載課程資料。
+
+### 前端（index-v2.html）行為補充
+- Keepalive 間隔可由後端 `SystemConfig.KeepAliveInterval` 下發，前端支援動態重排程（會取消舊計時器並套用新間隔）。
+- 每日 00:00 自動清理過去日期並刷新 UI（`deletePastAlarms` → `sortAlarms` → `renderAlarms`）。
+- 提供除錯紀錄顯示/隱藏切換，並記錄自動敲鐘判斷與 API 呼叫結果。
+- 在 GAS 環境下優先使用 `google.script.run.exportBellScheduleJSONV2()` 以避免 fetch 因部署/權限導致回傳 HTML（非 JSON）。
 
 ## 開發說明
 
