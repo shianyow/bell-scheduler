@@ -1,25 +1,98 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dhamma Gong v2</title>
   <style>
-    .play-button { display:flex; align-items:center; justify-content:center; width:100%; height:30vh; background:#707070; border:none; border-radius:50px; cursor:pointer; color:#fff; font-size:5vh; font-weight:bold; margin-bottom:10px; }
-    .play-button.flash { animation: flash-bg 3s ease-in-out infinite; }
-    @keyframes flash-bg { 0%{background:#707070;} 50%{background:#212121;} 100%{background:#707070;} }
-    .play-text { flex-grow:1; }
-    body { font-family: Arial, sans-serif; margin:20px; background:#f5f5f5; }
-    .container { max-width:100%; margin:0 auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,.1); }
-    .status { padding:10px; margin-bottom:15px; border-radius:4px; }
-    .status.loading { background:#d1ecf1; color:#0c5460; }
-    .status.success { background:#d4edda; color:#155724; }
-    .status.error { background:#f8d7da; color:#721c24; }
-    .hidden { display:none; }
-    .date-block { border:1px solid #ccc; padding:10px; margin-bottom:10px; background:#fff; }
+    .play-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 30vh;
+      background: #707070;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      color: #fff;
+      font-size: 5vh;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .play-button.flash {
+      animation: flash-bg 3s ease-in-out infinite;
+    }
+
+    @keyframes flash-bg {
+      0% {
+        background: #707070;
+      }
+
+      50% {
+        background: #212121;
+      }
+
+      100% {
+        background: #707070;
+      }
+    }
+
+    .play-text {
+      flex-grow: 1;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+    }
+
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, .1);
+    }
+
+    .status {
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+    }
+
+    .status.loading {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .date-block {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
   </style>
   <script>
-    function debugLog(msg){
+    function debugLog(msg) {
       const logDiv = document.getElementById('debug-log');
       const now = new Date().toLocaleTimeString();
       if (typeof msg !== 'string') msg = JSON.stringify(msg);
@@ -28,17 +101,21 @@
     }
   </script>
 </head>
+
 <body>
   <button class="play-button" onclick="playAlarm()">
-    <div class="play-text">點此手動敲鐘<br/>▶️</div>
+    <div class="play-text">點此手動敲鐘<br />▶️</div>
   </button>
 
   <div class="container">
     <div id="status" class="status hidden"></div>
     <div id="audio-unlock" class="status">請點擊畫面以啟用鐘聲🔓</div>
     <button id="debug-log-toggle" style="margin-bottom:8px;">顯示除錯紀錄</button>
-    <div id="debug-log" style="display:none;background:#222;color:#0f0;font-size:12px;max-height:200px;overflow:auto;padding:8px;margin-bottom:12px;border-radius:6px;"></div>
-    <div id="bell-log" style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:8px;margin-bottom:12px;"></div>
+    <div id="debug-log"
+      style="display:none;background:#222;color:#0f0;font-size:12px;max-height:200px;overflow:auto;padding:8px;margin-bottom:12px;border-radius:6px;">
+    </div>
+    <div id="bell-log" style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:8px;margin-bottom:12px;">
+    </div>
     <div id="date-list"></div>
   </div>
 
@@ -59,26 +136,26 @@
     // 音訊解鎖
     const audioUnlockDiv = document.getElementById('audio-unlock');
     let audioUnlocked = false;
-    function showAudioUnlockMsg(msg){ audioUnlockDiv.textContent = msg; audioUnlockDiv.classList.remove('hidden'); }
-    function hideAudioUnlockMsg(){ audioUnlockDiv.classList.add('hidden'); }
-    function unlockAudio(){
+    function showAudioUnlockMsg(msg) { audioUnlockDiv.textContent = msg; audioUnlockDiv.classList.remove('hidden'); }
+    function hideAudioUnlockMsg() { audioUnlockDiv.classList.add('hidden'); }
+    function unlockAudio() {
       if (audioUnlocked) return;
       alarmSound.muted = true;
-      alarmSound.play().then(()=>{ alarmSound.pause(); alarmSound.currentTime=0; alarmSound.muted=false; audioUnlocked=true; showAudioUnlockMsg('音訊已解鎖！🔊'); setTimeout(hideAudioUnlockMsg, 1200); })
-        .catch(()=> showAudioUnlockMsg('請點擊畫面以啟用鐘聲🔓'));
+      alarmSound.play().then(() => { alarmSound.pause(); alarmSound.currentTime = 0; alarmSound.muted = false; audioUnlocked = true; showAudioUnlockMsg('音訊已解鎖！🔊'); setTimeout(hideAudioUnlockMsg, 1200); })
+        .catch(() => showAudioUnlockMsg('請點擊畫面以啟用鐘聲🔓'));
     }
-    window.addEventListener('touchstart', unlockAudio, { once:true });
-    window.addEventListener('click', unlockAudio, { once:true });
+    window.addEventListener('touchstart', unlockAudio, { once: true });
+    window.addEventListener('click', unlockAudio, { once: true });
 
     // 狀態顯示
-    function showStatus(message, type='loading'){
+    function showStatus(message, type = 'loading') {
       const el = document.getElementById('status');
       el.textContent = message; el.className = `status ${type}`; el.classList.remove('hidden');
     }
-    function hideStatus(){ document.getElementById('status').classList.add('hidden'); }
+    function hideStatus() { document.getElementById('status').classList.add('hidden'); }
 
     // 偵測是否在 GAS 執行環境
-    function isGASEnv(){
+    function isGASEnv() {
       return (typeof google !== 'undefined' && google.script && google.script.run);
     }
 
@@ -86,7 +163,7 @@
     let alarms = []; // [{ date: 'YYYY-MM-DD', times: ['HH:MM', ...], bellTypes: { 'HH:MM': bellType|string|number } }]
     let bellConfig = {}; // { bellType: repeat }
 
-    function renderAlarms(){
+    function renderAlarms() {
       dateList.innerHTML = '';
       alarms.forEach(a => {
         const block = document.createElement('div');
@@ -96,68 +173,68 @@
       });
     }
 
-    function getTodayDateFormatted(){
+    function getTodayDateFormatted() {
       const today = new Date();
       const y = today.getFullYear();
-      const m = String(today.getMonth()+1).padStart(2,'0');
-      const d = String(today.getDate()).padStart(2,'0');
+      const m = String(today.getMonth() + 1).padStart(2, '0');
+      const d = String(today.getDate()).padStart(2, '0');
       return `${y}-${m}-${d}`;
     }
 
-    function generateDateArray(startDateStr, days){
+    function generateDateArray(startDateStr, days) {
       const result = []; const start = new Date(startDateStr);
-      for (let i=0;i<days;i++){ const dt = new Date(start); dt.setDate(start.getDate()+i); result.push(dt.toISOString().split('T')[0]); }
+      for (let i = 0; i < days; i++) { const dt = new Date(start); dt.setDate(start.getDate() + i); result.push(dt.toISOString().split('T')[0]); }
       return result;
     }
 
     // bell 播放
     let isAlarmPlaying = false; let pendingNextTimeout = null;
-    function playVisualAlarm(enable=true){ const btn = document.querySelector('.play-button'); enable?btn.classList.add('flash'):btn.classList.remove('flash'); }
-    function updatePlayButton(isPlaying=false){ const t=document.querySelector('.play-text'); if(!t) return; t.innerHTML = isPlaying ? '點此停止鐘聲<br/>⏹️' : '點此手動敲鐘<br/>▶️'; }
-    function playSingleAlarm(current, total){ alarmSound.onended=null; alarmSound.onended=()=>{ alarmSound.load(); }; alarmSound.play().catch(e=>debugLog('play error:'+e)); debugLog(`Bell played: ${current}/${total}`); }
-    function stopAlarm(){ if(!isAlarmPlaying) return; if(pendingNextTimeout){ clearTimeout(pendingNextTimeout); pendingNextTimeout=null; } alarmSound.pause(); alarmSound.currentTime=0; playVisualAlarm(false); updatePlayButton(false); isAlarmPlaying=false; }
-    function playAlarmSequence(times=1, trigger='自動'){
-      if(times<1) return; isAlarmPlaying=true; playVisualAlarm(true); updatePlayButton(true); let count=0; const gapMs=300; const bellDuration=16;
+    function playVisualAlarm(enable = true) { const btn = document.querySelector('.play-button'); enable ? btn.classList.add('flash') : btn.classList.remove('flash'); }
+    function updatePlayButton(isPlaying = false) { const t = document.querySelector('.play-text'); if (!t) return; t.innerHTML = isPlaying ? '點此停止鐘聲<br/>⏹️' : '點此手動敲鐘<br/>▶️'; }
+    function playSingleAlarm(current, total) { alarmSound.onended = null; alarmSound.onended = () => { alarmSound.load(); }; alarmSound.play().catch(e => debugLog('play error:' + e)); debugLog(`Bell played: ${current}/${total}`); }
+    function stopAlarm() { if (!isAlarmPlaying) return; if (pendingNextTimeout) { clearTimeout(pendingNextTimeout); pendingNextTimeout = null; } alarmSound.pause(); alarmSound.currentTime = 0; playVisualAlarm(false); updatePlayButton(false); isAlarmPlaying = false; }
+    function playAlarmSequence(times = 1, trigger = '自動') {
+      if (times < 1) return; isAlarmPlaying = true; playVisualAlarm(true); updatePlayButton(true); let count = 0; const gapMs = 300; const bellDuration = 16;
       // 鐘聲播放紀錄（與舊版一致）
       logBellPlay(trigger, times);
-      function playNext(){ if(!isAlarmPlaying) return; if(count>=times){ playVisualAlarm(false); updatePlayButton(false); isAlarmPlaying=false; return; } playSingleAlarm(count+1,times); count++; pendingNextTimeout=setTimeout(playNext,(bellDuration*1000)+gapMs); }
+      function playNext() { if (!isAlarmPlaying) return; if (count >= times) { playVisualAlarm(false); updatePlayButton(false); isAlarmPlaying = false; return; } playSingleAlarm(count + 1, times); count++; pendingNextTimeout = setTimeout(playNext, (bellDuration * 1000) + gapMs); }
       playNext();
     }
-    function playAlarm(){ if(isAlarmPlaying) stopAlarm(); else playAlarmSequence(4,'手動'); }
+    function playAlarm() { if (isAlarmPlaying) stopAlarm(); else playAlarmSequence(4, '手動'); }
 
-    function deletePastAlarms(){ const today=getTodayDateFormatted(); alarms = alarms.filter(a=>a.date>=today); }
-    function sortAlarms(){ alarms.sort((a,b)=> new Date(a.date)-new Date(b.date)); alarms.forEach(a=> a.times.sort((x,y)=> x.localeCompare(y))); }
+    function deletePastAlarms() { const today = getTodayDateFormatted(); alarms = alarms.filter(a => a.date >= today); }
+    function sortAlarms() { alarms.sort((a, b) => new Date(a.date) - new Date(b.date)); alarms.forEach(a => a.times.sort((x, y) => x.localeCompare(y))); }
 
     // 播放鐘聲紀錄（與舊版一致）
-    function logBellPlay(type, times){
+    function logBellPlay(type, times) {
       const logDiv = document.getElementById('bell-log');
       if (!logDiv) return;
       const now = new Date();
-      const hh = String(now.getHours()).padStart(2,'0');
-      const mm = String(now.getMinutes()).padStart(2,'0');
-      const ss = String(now.getSeconds()).padStart(2,'0');
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
       const msg = `[${hh}:${mm}:${ss}] ${type} 播放鐘聲 x${times}`;
       logDiv.innerHTML = `<div>${msg}</div>` + logDiv.innerHTML;
       const logs = logDiv.querySelectorAll('div');
-      if (logs.length > 20) { for (let i=20; i<logs.length; i++) logs[i].remove(); }
+      if (logs.length > 20) { for (let i = 20; i < logs.length; i++) logs[i].remove(); }
     }
 
-    function runEveryMinuteAtZeroSecond(){
-      const now=new Date(); const next=new Date(now); next.setSeconds(0); next.setMilliseconds(0); next.setMinutes(now.getMinutes()+1);
-      const delay = next-now;
+    function runEveryMinuteAtZeroSecond() {
+      const now = new Date(); const next = new Date(now); next.setSeconds(0); next.setMilliseconds(0); next.setMinutes(now.getMinutes() + 1);
+      const delay = next - now;
       debugLog(`[tick] schedule next @ ${next.toLocaleTimeString()} (delay=${delay}ms)`);
-      setTimeout(()=>{
-        const hh=String(next.getHours()).padStart(2,'0'); const mm=String(next.getMinutes()).padStart(2,'0'); const currentTime=`${hh}:${mm}`;
+      setTimeout(() => {
+        const hh = String(next.getHours()).padStart(2, '0'); const mm = String(next.getMinutes()).padStart(2, '0'); const currentTime = `${hh}:${mm}`;
         const today = getTodayDateFormatted();
-        const hasAlarms = !!(alarms && alarms.length>0);
-        const dateMatch = hasAlarms ? (alarms[0].date===today) : false;
+        const hasAlarms = !!(alarms && alarms.length > 0);
+        const dateMatch = hasAlarms ? (alarms[0].date === today) : false;
         const timeMatch = hasAlarms && dateMatch ? alarms[0].times.includes(currentTime) : false;
         debugLog(`[tick] now=${today} ${currentTime}, hasAlarms=${hasAlarms}, dateMatch=${dateMatch}, timeMatch=${timeMatch}`);
-        if(hasAlarms && dateMatch && timeMatch){
+        if (hasAlarms && dateMatch && timeMatch) {
           const v = alarms[0].bellTypes[currentTime] ?? 1;
           const repeat = (typeof v === 'number') ? v : (bellConfig[String(v)] || 1); // 以 BellConfig 決定敲幾聲
           debugLog(`自動播放鐘聲: repeat=${repeat}`);
-          playAlarmSequence(repeat,'自動');
+          playAlarmSequence(repeat, '自動');
         } else {
           if (!hasAlarms) debugLog('[tick] skip: no alarms');
           else if (!dateMatch) debugLog(`[tick] skip: date not match (first=${alarms[0]?.date}, today=${today})`);
@@ -168,15 +245,15 @@
     }
 
     // 每日 00:00 清理過去日期並刷新列表
-    function scheduleMidnightTask(){
+    function scheduleMidnightTask() {
       const now = new Date();
       const nextMidnight = new Date(now);
-      nextMidnight.setDate(now.getDate()+1);
-      nextMidnight.setHours(0,0,0,0);
+      nextMidnight.setDate(now.getDate() + 1);
+      nextMidnight.setHours(0, 0, 0, 0);
       const delay = nextMidnight - now;
       debugLog(`[midnight] schedule @ ${nextMidnight.toLocaleString()} (in ${delay}ms)`);
-      setTimeout(()=>{
-        try{
+      setTimeout(() => {
+        try {
           debugLog('[midnight] running: deletePastAlarms + refresh');
           deletePastAlarms();
           sortAlarms();
@@ -188,31 +265,31 @@
     }
 
     // 讀取 v2 API
-    async function fetchV2(){
+    async function fetchV2() {
       debugLog('Calling v2/course ...');
       if (isGASEnv()) {
         // 直接呼叫 GAS 函式，避免因部署或權限導致的 HTML 回傳
-        return await new Promise((resolve, reject)=>{
-          try{
+        return await new Promise((resolve, reject) => {
+          try {
             google.script.run
-              .withSuccessHandler((data)=>{ try{ debugLog('v2/course response (GAS): '+JSON.stringify(data)); }catch(_){}; resolve(data); })
-              .withFailureHandler(err=>{
-                const msg = (err && err.message) ? err.message : (typeof err==='string'? err : 'GAS error');
+              .withSuccessHandler((data) => { try { debugLog('v2/course response (GAS): ' + JSON.stringify(data)); } catch (_) { }; resolve(data); })
+              .withFailureHandler(err => {
+                const msg = (err && err.message) ? err.message : (typeof err === 'string' ? err : 'GAS error');
                 reject(new Error(msg));
               })
               .exportBellScheduleJSONV2();
-          }catch(e){ reject(e); }
+          } catch (e) { reject(e); }
         });
       }
       // 非 GAS 環境備援：fetch 路由端點
       const apiUrl = `${window.location.href.split('?')[0]}?path=v2/course`;
-      const resp = await fetch(apiUrl, { headers: { 'Accept':'application/json' } });
+      const resp = await fetch(apiUrl, { headers: { 'Accept': 'application/json' } });
       const text = await resp.text();
-      if(!resp.ok) throw new Error(`HTTP ${resp.status}: ${text.slice(0,120)}`);
-      try { const data = JSON.parse(text); try{ debugLog('v2/course response (fetch): '+JSON.stringify(data)); }catch(_){}; return data; } catch(e){ throw new Error("Unexpected token '<', response is not JSON"); }
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${text.slice(0, 120)}`);
+      try { const data = JSON.parse(text); try { debugLog('v2/course response (fetch): ' + JSON.stringify(data)); } catch (_) { }; return data; } catch (e) { throw new Error("Unexpected token '<', response is not JSON"); }
     }
 
-    function applyV2Data(v2){
+    function applyV2Data(v2) {
       // v2 compact: { CourseSchedule:[{startDate,courseType}], CourseTypeDays:{ct:[patternKey...]}, DailyPatternBells:{ct:{patternKey:[{time,bellType}]}} , BellConfig }
       alarms = [];
       bellConfig = v2.BellConfig || {};
@@ -225,16 +302,16 @@
         const dayKeys = Array.isArray(ctd[ct]) ? ctd[ct] : [];
         const dates = generateDateArray(sch.startDate, dayKeys.length);
         dates.forEach((date, idx) => {
-          const key = dayKeys[idx]; if(!key) return;
-          const bells = (((dpb||{})[ct]||{})[key]) || [];
+          const key = dayKeys[idx]; if (!key) return;
+          const bells = (((dpb || {})[ct] || {})[key]) || [];
           const times = []; const bellTypes = {};
-          bells.forEach(b=>{ if(b && b.time){ times.push(b.time); bellTypes[b.time] = (b.bellType!==undefined ? b.bellType : b.count); } });
-          const exist = alarms.find(a=>a.date===date);
-          if (exist){
-            times.forEach(t=>{ if(!exist.times.includes(t)) exist.times.push(t); exist.bellTypes[t] = bellTypes[t]; });
-            exist.times.sort((x,y)=> x.localeCompare(y));
+          bells.forEach(b => { if (b && b.time) { times.push(b.time); bellTypes[b.time] = (b.bellType !== undefined ? b.bellType : b.count); } });
+          const exist = alarms.find(a => a.date === date);
+          if (exist) {
+            times.forEach(t => { if (!exist.times.includes(t)) exist.times.push(t); exist.bellTypes[t] = bellTypes[t]; });
+            exist.times.sort((x, y) => x.localeCompare(y));
           } else {
-            alarms.push({ date, times: Array.from(new Set(times)).sort((x,y)=> x.localeCompare(y)), bellTypes });
+            alarms.push({ date, times: Array.from(new Set(times)).sort((x, y) => x.localeCompare(y)), bellTypes });
           }
         });
       });
@@ -243,45 +320,45 @@
     }
 
     // keepalive：取得狀態與資料版本，必要時重新載入
-    async function checkSystemStatus(){
-      try{
+    async function checkSystemStatus() {
+      try {
         showStatus('💓 Checking...', 'loading');
         debugLog('Calling keepalive ...');
         let data;
-        if (isGASEnv()){
-          data = await new Promise((resolve, reject)=>{
+        if (isGASEnv()) {
+          data = await new Promise((resolve, reject) => {
             google.script.run
-              .withSuccessHandler((d)=>{ try{ debugLog('keepalive response (GAS): '+JSON.stringify(d)); }catch(_){}; resolve(d); })
-              .withFailureHandler(err=>{
-                const msg = (err && err.message) ? err.message : (typeof err==='string'? err : 'GAS error');
+              .withSuccessHandler((d) => { try { debugLog('keepalive response (GAS): ' + JSON.stringify(d)); } catch (_) { }; resolve(d); })
+              .withFailureHandler(err => {
+                const msg = (err && err.message) ? err.message : (typeof err === 'string' ? err : 'GAS error');
                 reject(new Error(msg));
               })
               .getKeepAliveData();
           });
         } else {
           const apiUrl = `${window.location.href.split('?')[0]}?path=keepalive`;
-          const resp = await fetch(apiUrl, { headers: { 'Accept':'application/json' } });
-          if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          const resp = await fetch(apiUrl, { headers: { 'Accept': 'application/json' } });
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
           data = await resp.json();
-          try{ debugLog('keepalive response (fetch): '+JSON.stringify(data)); }catch(_){ }
+          try { debugLog('keepalive response (fetch): ' + JSON.stringify(data)); } catch (_) { }
         }
 
-        if (data.status === 'OK'){
+        if (data.status === 'OK') {
           const lastDataChangeTime = JSON.stringify(data.lastDataChange);
           const lastLocal = localStorage.getItem('lastDataChange');
           let statusMessage = `✅ 課程資料最後更新：${lastDataChangeTime}`;
-          if (lastDataChangeTime !== lastLocal){
+          if (lastDataChangeTime !== lastLocal) {
             const v2 = await fetchV2();
             applyV2Data(v2);
             localStorage.setItem('lastDataChange', lastDataChangeTime);
           }
-          if (data.systemConfig && data.systemConfig.KeepAliveInterval){
+          if (data.systemConfig && data.systemConfig.KeepAliveInterval) {
             const newMin = Number(data.systemConfig.KeepAliveInterval);
-            if (!isNaN(newMin) && newMin > 0){
+            if (!isNaN(newMin) && newMin > 0) {
               const prevMin = window.__keepAliveMinutes || 0;
               // 寫入 localStorage 供下次載入使用
               localStorage.setItem('keepAliveInterval', JSON.stringify(newMin));
-              if (newMin !== prevMin){
+              if (newMin !== prevMin) {
                 scheduleKeepalive(newMin);
               }
             }
@@ -290,33 +367,33 @@
         } else {
           showStatus('⚠️ 系統狀態異常', 'error');
         }
-      }catch(e){
-        debugLog(e?.message||String(e));
-        showStatus('❌ Keepalive 失敗: '+(e?.message||e), 'error');
+      } catch (e) {
+        debugLog(e?.message || String(e));
+        showStatus('❌ Keepalive 失敗: ' + (e?.message || e), 'error');
       }
     }
 
-    async function init(){
-      try{
+    async function init() {
+      try {
         const data = await fetchV2();
         debugLog('v2 loaded');
         applyV2Data(data);
-      }catch(e){
-        debugLog(e?.message||String(e));
+      } catch (e) {
+        debugLog(e?.message || String(e));
       }
     }
 
     // keepalive 排程器：可動態調整間隔
     let __keepAliveTimerId = null;
     window.__keepAliveMinutes = 0;
-    function scheduleKeepalive(min){
-      if (__keepAliveTimerId){ clearInterval(__keepAliveTimerId); __keepAliveTimerId = null; }
+    function scheduleKeepalive(min) {
+      if (__keepAliveTimerId) { clearInterval(__keepAliveTimerId); __keepAliveTimerId = null; }
       window.__keepAliveMinutes = min;
-      __keepAliveTimerId = setInterval(checkSystemStatus, min*60*1000);
+      __keepAliveTimerId = setInterval(checkSystemStatus, min * 60 * 1000);
       debugLog(`Keepalive scheduled: ${min} min`);
     }
 
-    document.addEventListener('DOMContentLoaded', ()=>{
+    document.addEventListener('DOMContentLoaded', () => {
       init();
       runEveryMinuteAtZeroSecond();
       scheduleMidnightTask();
@@ -331,8 +408,8 @@
       // 除錯紀錄顯示/隱藏
       const toggleBtn = document.getElementById('debug-log-toggle');
       const debugDiv = document.getElementById('debug-log');
-      if (toggleBtn && debugDiv){
-        toggleBtn.addEventListener('click', ()=>{
+      if (toggleBtn && debugDiv) {
+        toggleBtn.addEventListener('click', () => {
           const isHidden = (debugDiv.style.display === 'none');
           debugDiv.style.display = isHidden ? 'block' : 'none';
           toggleBtn.textContent = isHidden ? '隱藏除錯紀錄' : '顯示除錯紀錄';
@@ -341,4 +418,5 @@
     });
   </script>
 </body>
+
 </html>
