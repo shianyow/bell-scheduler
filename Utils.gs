@@ -89,9 +89,44 @@ function clearStatusEvent(eventName) {
   }
 }
 
+// ===== Device Status helpers =====
+/**
+ * 回傳 JSON 內容（Apps Script 無法真正設置 HTTP 狀態碼，此函式僅統一輸出格式）
+ */
+function jsonResponse(obj, statusCode) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
 
+/**
+ * 驗證 /deviceStatus 的 token（於 Script Properties 設定 DEVICE_STATUS_TOKEN）
+ * 若未設定則不驗證
+ */
+function validateDeviceStatusToken(token) {
+  try {
+    const expected = PropertiesService.getScriptProperties().getProperty('DEVICE_STATUS_TOKEN');
+    if (!expected) return true;
+    return token === expected;
+  } catch (e) {
+    return true;
+  }
+}
 
+/**
+ * 追加原始裝置狀態紀錄表（DeviceStatusLog）：Timestamp | Device | Battery | Charging
+ */
+function appendDeviceStatusLog(ts, device, battery, charging) {
+  const sh = getOrCreateSheetByName('DeviceStatusLog');
+  if (sh.getLastRow() === 0) sh.appendRow(['Timestamp', 'Device', 'Battery', 'Charging']);
+  sh.appendRow([ts, device, battery, charging]);
+}
 
+function getOrCreateSheetByName(name) {
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName(name);
+  if (!sh) sh = ss.insertSheet(name);
+  return sh;
+}
 
 /**
  * onEdit 觸發器：只要非 Status 工作表有編輯時，更新 LastDataChange
