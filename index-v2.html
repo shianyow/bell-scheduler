@@ -182,8 +182,8 @@
   </audio>
 
   <script>
-    // 內嵌鐘聲音檔（與舊版一致）
-    <?!= include('bell2nrjs') ?>
+    // 內嵌鐘聲音檔
+    <?!= include('bell3js') ?>
 
     const dateList = document.getElementById('date-list');
     const alarmSound = document.getElementById('alarm-sound');
@@ -404,8 +404,8 @@
       if (audioCtx && audioCtx.state === 'suspended') { try { await audioCtx.resume(); } catch (_) { } }
       isAlarmPlaying = true; playVisualAlarm(true); updatePlayButton(true);
       let count = 0;
-      // 每聲之間的觸發間隔（毫秒）。需求：每 15 秒一聲（音檔約 17 秒，會產生適度重疊）。
-      const strikeIntervalMs = 15000;
+      // 每聲之間的觸發間隔（毫秒）。
+      const strikeIntervalMs = 11000;
       // 鐘聲播放紀錄（與舊版一致）
       logBellPlay(trigger, times);
       function playNext() {
