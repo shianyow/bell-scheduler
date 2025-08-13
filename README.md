@@ -2,7 +2,7 @@
 
 這是一個用 Google Apps Script 和 Google Sheets 製作的敲鐘系統，支援課程排程與 Web 管理介面。
 
-**快速開始：** [複製 Bell Schedule 模板](https://docs.google.com/spreadsheets/d/1sJz7x1b5bWCyKxZlOuCWttqqiOZgy3ApUrKLIKhMo10/edit?usp=sharing) 建立你的敲鐘系統。
+**快速開始：** [複製 Bell Schedule 模板](https://docs.google.com/spreadsheets/d/1as5jedZoFz7Yv8Armu6TaVUxKEx_4V5nBtygqa3Fpls) 建立你的敲鐘系統。
 
 ## 功能
 
@@ -19,16 +19,16 @@
 ### 檔案結構
 ```
 bell-scheduler/
-├── index-v2.html      # 前端（v2）
-├── index.html         #（可選）備用頁面
+├── index-v2.html      # 前端（v2，預設）
 ├── test.html          # 後端測試介面
+├── bell3js.html       # 內嵌鐘聲音檔（供 index-v2 include）
 ├── Route.gs           # 路由處理和 HTTP 請求分發
 ├── Api.gs             # 主要 API 邏輯和資料處理
 ├── Utils.gs           # 工具函式（日期時間格式化、配置讀取）
 └── README.md          # 專案說明文件
 ```
 
-### 🗄️ Google Sheets 資料結構
+### 🗄️ Google Sheets 資料結構（v2）
 
 #### 1. **CourseSchedule** 工作表
 | 欄位 | 說明 | 範例 |
@@ -36,17 +36,15 @@ bell-scheduler/
 | 開始日期 | 課程開始日期 | 2025-08-01 |
 | 課程類型 | 課程類型名稱 | 正常課程 |
 
-#### 2. **CourseType_[類型名]** 工作表
-| 欄位 | 說明 | 範例 |
-|------|------|------|
-| 天數 | 第幾天 | 1 |
-| 模式 | 使用的鐘聲模式 | 標準模式 |
+#### 2. **CourseType** 工作表（矩陣）
+- 第 1 列為表頭：第 1 欄留白，後續各欄為課程類型名稱（例如：正常課程、密集課程...）。
+- 第 1 欄為天數索引（D1、D2、... 或數字），其餘儲存格填入「每日模式鍵（patternKey）」。
+- Apps Script 會按列由左至右讀取每個課程類型對應天數的 patternKey。
 
-#### 3. **DailyPattern_[模式名]** 工作表
-| 欄位 | 說明 | 範例 |
-|------|------|------|
-| Time | 鐘聲時間 | 08:00 |
-| BellType | 鐘聲類型 | 1 |
+#### 3. **DailyPatternBell_<課程類型>** 工作表
+- 第 1 列為表頭：第 1 欄為 `Time`，後續各欄為「每日模式鍵（patternKey）」。
+- 第 1 欄填 24 小時制時間（例如 08:00）；各 patternKey 欄位填入「BellType（字串或數字）」或留白/0 表示無鐘聲。
+- 由 Apps Script 匯出為 `DailyPatternBells[課程類型][patternKey] = [{ time, bellType }]`，時間會自動排序。
 
 #### 4. **SystemConfig** 工作表
 | Key              | Value                      | Note                                   |
@@ -70,26 +68,12 @@ bell-scheduler/
 
 ## 🚀 部署指南
 
-> 💡 **快速開始：** 建議先複製我們的 [Bell Schedule 模板](https://docs.google.com/spreadsheets/d/1sJz7x1b5bWCyKxZlOuCWttqqiOZgy3ApUrKLIKhMo10/edit?usp=sharing) 來快速建立 Google Sheets！
-
 ### 1. 建立 Google Sheets 和 Apps Script
-
-#### 📋 **使用模板（推薦）**
-直接複製我們提供的模板：
-🔗 **[Bell Schedule 模板](https://docs.google.com/spreadsheets/d/1sJz7x1b5bWCyKxZlOuCWttqqiOZgy3ApUrKLIKhMo10/edit?usp=sharing)**
-
 1. 點擊上方連結開啟模板
 2. 點擊「檔案」→「建立副本」
 3. 命名你的副本（例如：「我的敲鐘系統」）
 4. 在你的 Google Sheets 中，點擊「擴充功能」→「Apps Script」
 5. 在開啟的 Apps Script 編輯器中，複製上述程式碼檔案
-
-#### 🔨 **手動建立**
-如果你想手動建立：
-1. 建立新的 Google Sheets
-2. 根據上述資料結構建立對應的工作表
-3. 在 Google Sheets 中，點擊「擴充功能」→「Apps Script」
-4. 在開啟的 Apps Script 編輯器中，複製上述程式碼檔案
 
 ### 2. 部署為 Web 應用程式
 1. 點擊「部署」→「新增部署」
@@ -107,7 +91,6 @@ bell-scheduler/
 | URL | 介面 | 用途 |
 |-----|------|------|
 | `你的網址` | `index-v2.html` | 🏠 **前端（v2，預設）** - 顯示課表與自動敲鐘 |
-| `你的網址?path=v2` | `index-v2.html` | 🔗 與 root 相同的新版入口 |
 | `你的網址?path=test` | `test.html` | 🔧 **後端測試介面** - API 測試與除錯 |
 
 ### 🔧 測試介面功能
@@ -191,10 +174,9 @@ bell-scheduler/
 {
   "status": "OK",
   "systemConfig": {
-    "KeepAliveInterval": 5,
-    
+    "KeepAliveInterval": 5
   },
-  "timestamp": "2025-08-01T05:41:06.000Z"
+  "lastDataChange": "2025-08-02 12:39:52"
 }
 ```
 
