@@ -129,11 +129,24 @@ function getOrCreateSheetByName(name) {
 }
 
 /**
- * onEdit 觸發器：只要非 Status 工作表有編輯時，更新 LastDataChange
+ * onEdit 觸發器：只有特定工作表變更時才更新 LastDataChange
+ * 目標工作表：
+ * - SystemConfig
+ * - CourseSchedule
+ * - CourseType
+ * - BellConfig
+ * - DailyPatternBell_*（前綴符合）
  */
 function onEdit(e) {
-  var sheetName = e.range.getSheet().getName();
-  if (sheetName === 'Status') return;
+  const sheetName = e.range.getSheet().getName();
+  const shouldUpdate = (
+    sheetName === 'SystemConfig' ||
+    sheetName === 'CourseSchedule' ||
+    sheetName === 'CourseType' ||
+    sheetName === 'BellConfig' ||
+    sheetName.startsWith('DailyPatternBell_')
+  );
+  if (!shouldUpdate) return;
   updateStatusEvent('LastDataChange');
 }
 
