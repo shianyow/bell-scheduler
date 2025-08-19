@@ -122,6 +122,85 @@
     #debug-entries { padding:8px; font-size:12px; }
   </style>
   <script>
+    // === i18n (ZH/EN) ===
+    const TRANSLATIONS = {
+      zh: {
+        'play_button.play': '點此手動敲鐘<br />▶️',
+        'play_button.stop': '點此停止鐘聲<br/>⏹️',
+        'audio.unlock_prompt': '請點擊畫面以啟用鐘聲🔓',
+        'audio.unlocked': '音訊已解鎖！🔊',
+        'status.checking': '💓 檢查中...',
+        'status.ok_prefix': '✅ 課程資料最後更新：',
+        'status.system_abnormal': '⚠️ 系統狀態異常',
+        'status.keepalive_failed_prefix': '❌ Keepalive 失敗: ',
+        'tools.show_debug': '顯示 Debug Log',
+        'tools.hide_debug': '隱藏除錯紀錄',
+        'tools.lang_toggle': '切換語言',
+        'debug.title': 'Debug Log',
+        'debug.level.0': '0 關閉',
+        'debug.level.1': '1 一般',
+        'debug.level.2': '2 詳細',
+        'log.type.auto': '自動',
+        'log.type.manual': '手動',
+        'log.played': '播放鐘聲'
+      },
+      en: {
+        'play_button.play': 'Click To Play Gong<br />▶️',
+        'play_button.stop': 'Click To Stop Gong<br/>⏹️',
+        'audio.unlock_prompt': 'Tap anywhere to enable sound 🔓',
+        'audio.unlocked': 'Audio unlocked! 🔊',
+        'status.checking': '💓 Checking...',
+        'status.ok_prefix': '✅ Last data update: ',
+        'status.system_abnormal': '⚠️ System abnormal',
+        'status.keepalive_failed_prefix': '❌ Keepalive failed: ',
+        'tools.show_debug': 'Show Debug Log',
+        'tools.hide_debug': 'Hide Debug Log',
+        'tools.lang_toggle': 'Switch language',
+        'debug.title': 'Debug Log',
+        'debug.level.0': '0 Off',
+        'debug.level.1': '1 Normal',
+        'debug.level.2': '2 Verbose',
+        'log.type.auto': 'Auto',
+        'log.type.manual': 'Manual',
+        'log.played': 'Gong played'
+      }
+    };
+    function getLang() {
+      try { return localStorage.getItem('lang') || 'zh'; } catch (_) { return 'zh'; }
+    }
+    function setLang(lang) {
+      const v = (lang === 'en') ? 'en' : 'zh';
+      try { localStorage.setItem('lang', v); } catch (_) {}
+      try { document.documentElement.lang = (v === 'en' ? 'en' : 'zh-Hant'); } catch (_) {}
+    }
+    function t(key) {
+      const lang = getLang();
+      return (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) || TRANSLATIONS.zh[key] || key;
+    }
+    function i18nApply() {
+      // Apply static elements with data-i18n
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const k = el.getAttribute('data-i18n');
+        const asHtml = el.getAttribute('data-i18n-html') === '1';
+        const txt = t(k);
+        if (asHtml) el.innerHTML = txt; else el.textContent = txt;
+      });
+      // Attributes
+      document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.getAttribute('data-i18n-title')); });
+      // Debug title
+      const dt = document.getElementById('debug-title'); if (dt) dt.textContent = t('debug.title');
+      // Debug level options
+      const d0 = document.querySelector('#debug-level-select option[value="0"]'); if (d0) d0.textContent = t('debug.level.0');
+      const d1 = document.querySelector('#debug-level-select option[value="1"]'); if (d1) d1.textContent = t('debug.level.1');
+      const d2 = document.querySelector('#debug-level-select option[value="2"]'); if (d2) d2.textContent = t('debug.level.2');
+      // Tools button titles
+      const toolsBtn = document.getElementById('tools-btn');
+      const debugDiv = document.getElementById('debug-log');
+      if (toolsBtn && debugDiv) {
+        const isHidden = (debugDiv.style.display === 'none' || debugDiv.style.display === '');
+        toolsBtn.title = isHidden ? t('tools.show_debug') : t('tools.hide_debug');
+      }
+    }
     // Debug 等級：0=關閉, 1=一般, 2=詳細
     function debugLog(msg, level = 1) {
       const threshold = window.__debugLevel ?? 1;
@@ -150,19 +229,20 @@
 
 <body>
   <button class="play-button" onclick="playAlarm()">
-    <div class="play-text">點此手動敲鐘<br />▶️</div>
+    <div class="play-text" id="play-text" data-i18n="play_button.play" data-i18n-html="1">點此手動敲鐘<br />▶️</div>
   </button>
 
   <div class="container">
     <div class="status-row" style="margin-bottom:8px;">
       <div id="status" class="status hidden"></div>
       <div class="spacer"></div>
-      <button id="tools-btn" class="tool-btn" title="顯示 Debug Log">🔎</button>
+      <button id="lang-btn" class="tool-btn" data-i18n-title="tools.lang_toggle" title="切換語言">🌐</button>
+      <button id="tools-btn" class="tool-btn" data-i18n-title="tools.show_debug" title="顯示 Debug Log">🔎</button>
     </div>
-    <div id="audio-unlock" class="status">請點擊畫面以啟用鐘聲🔓</div>
+    <div id="audio-unlock" class="status" data-i18n="audio.unlock_prompt">請點擊畫面以啟用鐘聲🔓</div>
     <div id="debug-log" style="display:none; max-height:200px; overflow:auto; margin-bottom:12px; border-radius:6px;">
       <div class="debug-header">
-        <span style="font-weight:600;">Debug Log</span>
+        <span id="debug-title" style="font-weight:600;">Debug Log</span>
         <div class="spacer"></div>
         <select id="debug-level-select" style="font-size:12px; background:#1a1a1a; color:#9f9; border:1px solid #333; border-radius:4px; padding:2px 6px;">
           <option value="0">0 關閉</option>
@@ -257,10 +337,10 @@
         } catch (_) { /* ignore */ }
 
         audioUnlocked = true;
-        showAudioUnlockMsg('音訊已解鎖！🔊');
+        showAudioUnlockMsg(t('audio.unlocked'));
         setTimeout(hideAudioUnlockMsg, 1200);
       } catch (_) {
-        showAudioUnlockMsg('請點擊畫面以啟用鐘聲🔓');
+        showAudioUnlockMsg(t('audio.unlock_prompt'));
       }
     }
     window.addEventListener('touchstart', unlockAudio, { once: true });
@@ -274,7 +354,7 @@
       while (!audioUnlocked && (Date.now() - start) < timeoutMs) {
         await new Promise(r => setTimeout(r, 50));
       }
-      if (!audioUnlocked) { showAudioUnlockMsg('請點擊畫面以啟用鐘聲🔓'); }
+      if (!audioUnlocked) { showAudioUnlockMsg(t('audio.unlock_prompt')); }
       return audioUnlocked;
     }
 
@@ -328,10 +408,10 @@
     const activeAudios = new Set();    // HTMLAudioElement 實例
     const activeSources = new Set();   // Web Audio BufferSource 實例
     function playVisualAlarm(enable = true) { const btn = document.querySelector('.play-button'); enable ? btn.classList.add('flash') : btn.classList.remove('flash'); }
-    function updatePlayButton(isPlaying = false) { const t = document.querySelector('.play-text'); if (!t) return; t.innerHTML = isPlaying ? '點此停止鐘聲<br/>⏹️' : '點此手動敲鐘<br/>▶️'; }
+    function updatePlayButton(isPlaying = false) { const el = document.querySelector('.play-text'); if (!el) return; el.innerHTML = isPlaying ? t('play_button.stop') : t('play_button.play'); }
     function playSingleAlarm(current, total) {
       // 尚未解鎖時避免觸發瀏覽器限制
-      if (!audioUnlocked) { showAudioUnlockMsg('請點擊畫面以啟用鐘聲🔓'); return; }
+      if (!audioUnlocked) { showAudioUnlockMsg(t('audio.unlock_prompt')); return; }
       // 優先使用 Web Audio（iOS 更穩定），否則退回 HTMLAudio
       if (audioCtx && bellBuffer) {
         try {
@@ -395,7 +475,7 @@
       updatePlayButton(false);
       isAlarmPlaying = false;
     }
-    async function playAlarmSequence(times = 1, trigger = '自動') {
+    async function playAlarmSequence(times = 1, trigger = 'auto') {
       if (times < 1) return;
       // 先確保已解鎖
       const ok = await ensureAudioUnlocked();
@@ -417,7 +497,7 @@
       }
       playNext();
     }
-    async function playAlarm() { if (isAlarmPlaying) stopAlarm(); else await playAlarmSequence(4, '手動'); }
+    async function playAlarm() { if (isAlarmPlaying) stopAlarm(); else await playAlarmSequence(4, 'manual'); }
 
     function deletePastAlarms() { const today = getTodayDateFormatted(); alarms = alarms.filter(a => a.date >= today); }
     function sortAlarms() { alarms.sort((a, b) => new Date(a.date) - new Date(b.date)); alarms.forEach(a => a.times.sort((x, y) => x.localeCompare(y))); }
@@ -428,7 +508,8 @@
       if (!logDiv) return;
       const now = new Date();
       const nowStr = now.toLocaleTimeString();
-      const msg = `[${nowStr}] ${type} 播放鐘聲 x${times}`;
+      const typeKey = (type === 'manual' || type === '手動') ? 'manual' : 'auto';
+      const msg = `[${nowStr}] ${t('log.type.' + typeKey)} ${t('log.played')} x${times}`;
       logDiv.innerHTML = `<div>${msg}</div>` + logDiv.innerHTML;
       const logs = logDiv.querySelectorAll('div');
       if (logs.length > 20) { for (let i = 20; i < logs.length; i++) logs[i].remove(); }
@@ -467,7 +548,7 @@
             const v = alarms[0].bellTypes[currentTime] ?? 1;
             const repeat = (typeof v === 'number') ? v : (bellConfig[String(v)] || 1); // 以 BellConfig 決定敲幾聲
             debugLog(`自動播放鐘聲: repeat=${repeat}`);
-            playAlarmSequence(repeat, '自動');
+            playAlarmSequence(repeat, 'auto');
           }
         } else {
           if (!hasAlarms) debugLog('[tick] skip: no alarms');
@@ -556,7 +637,7 @@
     // keepalive：取得狀態與資料版本，必要時重新載入
     async function checkSystemStatus() {
       try {
-        showStatus('💓 Checking...', 'loading');
+        showStatus(t('status.checking'), 'loading');
         debugLog('Calling keepalive ...');
         let data;
         if (isGASEnv()) {
@@ -580,7 +661,7 @@
         if (data.status === 'OK') {
           const lastDataChangeTime = JSON.stringify(data.lastDataChange);
           const lastLocal = localStorage.getItem('lastDataChange');
-          let statusMessage = `✅ 課程資料最後更新：${lastDataChangeTime}`;
+          let statusMessage = `${t('status.ok_prefix')}${lastDataChangeTime}`;
           if (lastDataChangeTime !== lastLocal) {
             const v2 = await fetchV2();
             applyV2Data(v2);
@@ -599,11 +680,11 @@
           }
           showStatus(statusMessage, 'success');
         } else {
-          showStatus('⚠️ 系統狀態異常', 'error');
+          showStatus(t('status.system_abnormal'), 'error');
         }
       } catch (e) {
         debugLog(e?.message || String(e));
-        showStatus('❌ Keepalive 失敗: ' + (e?.message || e), 'error');
+        showStatus(t('status.keepalive_failed_prefix') + (e?.message || e), 'error');
       }
     }
 
@@ -645,6 +726,10 @@
     })();
 
     document.addEventListener('DOMContentLoaded', () => {
+      // Initialize language
+      setLang(getLang());
+      i18nApply();
+      updatePlayButton(false);
       init();
       runEveryMinuteAtZeroSecond();
       scheduleMidnightTask();
@@ -658,6 +743,7 @@
 
       // 小工具按鈕：明確作為 Debug 開/關，並固定 header 內含等級選單
       const toolsBtn = document.getElementById('tools-btn');
+      const langBtn = document.getElementById('lang-btn');
       const debugDiv = document.getElementById('debug-log');
       const debugLevelSel = document.getElementById('debug-level-select');
       if (debugLevelSel) {
@@ -669,12 +755,22 @@
           try { localStorage.setItem('debugLevel', String(lvl)); } catch (_) {}
           debugLog(`Debug level set to ${lvl}`, 0);
         });
+        // Ensure options are localized on load
+        i18nApply();
       }
       if (toolsBtn && debugDiv) {
         toolsBtn.addEventListener('click', () => {
           const isHidden = (debugDiv.style.display === 'none' || debugDiv.style.display === '');
-          if (isHidden) { debugDiv.style.display = 'block'; toolsBtn.classList.add('active'); toolsBtn.title = '隱藏除錯紀錄'; }
-          else { debugDiv.style.display = 'none'; toolsBtn.classList.remove('active'); toolsBtn.title = '顯示除錯紀錄'; }
+          if (isHidden) { debugDiv.style.display = 'block'; toolsBtn.classList.add('active'); toolsBtn.title = t('tools.hide_debug'); }
+          else { debugDiv.style.display = 'none'; toolsBtn.classList.remove('active'); toolsBtn.title = t('tools.show_debug'); }
+        });
+      }
+      if (langBtn) {
+        langBtn.addEventListener('click', () => {
+          const next = (getLang() === 'en') ? 'zh' : 'en';
+          setLang(next);
+          i18nApply();
+          updatePlayButton(isAlarmPlaying);
         });
       }
     });
