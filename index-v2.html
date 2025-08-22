@@ -515,48 +515,43 @@
       if (logs.length > 20) { for (let i = 20; i < logs.length; i++) logs[i].remove(); }
     }
 
-    function runEveryMinuteAtZeroSecond() {
-      const now = new Date();
-      const next = new Date(now);
-      next.setSeconds(0);
-      next.setMilliseconds(0);
-      next.setMinutes(now.getMinutes() + 1);
-      const delay = next - now;
-      debugLog(`[tick] schedule next @ ${next.toLocaleTimeString()} (delay=${delay}ms)`, 2);
-      setTimeout(() => {
-        // 在回呼當下重新取得時間，避免計時器提前於 :00 觸發造成誤判
+    // 更穩定的排程：每秒檢查一次，於該分鐘前幾秒內觸發，避免 setTimeout 漂移錯過 :00
+    let __minuteTickerId = null;
+    function startMinuteTicker() {
+      if (__minuteTickerId) { clearInterval(__minuteTickerId); __minuteTickerId = null; }
+      // 去重 key："YYYY-MM-DD HH:MM"
+      window.__lastAutoFireKey = window.__lastAutoFireKey || '';
+      __minuteTickerId = setInterval(() => {
         const t = new Date();
+        const sec = t.getSeconds();
+        // 僅在每分鐘的前 6 秒內檢查與觸發，避免重複與日常噪音
+        if (sec > 5) return;
         const hh = String(t.getHours()).padStart(2, '0');
         const mm = String(t.getMinutes()).padStart(2, '0');
         const currentTime = `${hh}:${mm}`;
         const today = getTodayDateFormatted();
-
-        // 每分鐘去重：避免於邊界抖動而重複播放
-        window.__lastAutoFireKey = window.__lastAutoFireKey || '';
         const currentKey = `${today} ${currentTime}`;
 
         const hasAlarms = !!(alarms && alarms.length > 0);
         const dateMatch = hasAlarms ? (alarms[0].date === today) : false;
         const timeMatch = hasAlarms && dateMatch ? alarms[0].times.includes(currentTime) : false;
-        debugLog(`[tick] now=${today} ${currentTime}, hasAlarms=${hasAlarms}, dateMatch=${dateMatch}, timeMatch=${timeMatch}` , 2);
+        if (sec <= 1) {
+          // 僅在 0~1 秒時輸出詳細 tick 紀錄，避免洗版
+          debugLog(`[tick] now=${today} ${currentTime} (sec=${sec}), hasAlarms=${hasAlarms}, dateMatch=${dateMatch}, timeMatch=${timeMatch}`, 2);
+        }
         if (hasAlarms && dateMatch && timeMatch) {
           if (window.__lastAutoFireKey === currentKey) {
-            // 已於本分鐘觸發過，避免重複
-            debugLog(`[tick] duplicate suppressed for ${currentKey}`, 2);
-          } else {
-            window.__lastAutoFireKey = currentKey;
-            const v = alarms[0].bellTypes[currentTime] ?? 1;
-            const repeat = (typeof v === 'number') ? v : (bellConfig[String(v)] || 1); // 以 BellConfig 決定敲幾聲
-            debugLog(`自動播放鐘聲: repeat=${repeat}`);
-            playAlarmSequence(repeat, 'auto');
+            if (sec <= 1) debugLog(`[tick] duplicate suppressed for ${currentKey}`, 2);
+            return;
           }
-        } else {
-          if (!hasAlarms) debugLog('[tick] skip: no alarms');
-          else if (!dateMatch) debugLog(`[tick] skip: date not match (first=${alarms[0]?.date}, today=${today})`);
-          else if (!timeMatch) debugLog(`[tick] skip: ${currentTime} not in [${alarms[0].times.join(', ')}]`, 2);
+          window.__lastAutoFireKey = currentKey;
+          const v = alarms[0].bellTypes[currentTime] ?? 1;
+          const repeat = (typeof v === 'number') ? v : (bellConfig[String(v)] || 1);
+          debugLog(`自動播放鐘聲: repeat=${repeat}`);
+          playAlarmSequence(repeat, 'auto');
         }
-        runEveryMinuteAtZeroSecond();
-      }, delay);
+      }, 1000);
+      debugLog('Minute ticker started (1s interval)');
     }
 
     // 每日 00:00 清理過去日期並刷新列表
@@ -731,7 +726,7 @@
       i18nApply();
       updatePlayButton(false);
       init();
-      runEveryMinuteAtZeroSecond();
+      startMinuteTicker();
       scheduleMidnightTask();
       // 啟動 keepalive 定時器（預設 5 分鐘，或使用 localStorage 上次值）
       const fallbackMin = 5;
