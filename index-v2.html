@@ -89,6 +89,19 @@
       white-space: pre-line;
     }
 
+    #audio-unlock {
+      width: 100%;
+      min-height: 64px;
+      border: 1px solid #b6dbff;
+      background: #eef6ff;
+      color: #0b4f8a;
+      cursor: pointer;
+      font: inherit;
+      font-size: 1.1rem;
+      font-weight: bold;
+      touch-action: manipulation;
+    }
+
     .hidden {
       display: none;
     }
@@ -136,12 +149,12 @@
       zh: {
         'play_button.play': '點此手動敲鐘<br />▶️',
         'play_button.stop': '點此停止鐘聲<br/>⏹️',
-        'audio.unlock_prompt': '請點擊畫面以啟用鐘聲🔓',
+        'audio.unlock_prompt': '點此啟用鐘聲（不會敲鐘）🔓',
         'audio.unlocked': '音訊已解鎖！🔊',
         'audio.recovering': '正在恢復鐘聲…',
         'audio.reconnected': '鐘聲已恢復！🔊',
-        'audio.reconnect_prompt': '瀏覽器已從背景返回，請點擊畫面重新啟用鐘聲🔓',
-        'audio.action_required': '⚠️ 鐘聲尚未啟用，請立即點擊畫面',
+        'audio.reconnect_prompt': '瀏覽器已從背景返回，請點此重新啟用鐘聲（不會敲鐘）🔓',
+        'audio.action_required': '⚠️ 鐘聲尚未啟用，請立即點此啟用（不會敲鐘）',
         'audio.next_bell_prefix': '下一次鐘聲：',
         'status.checking': '💓 檢查中...',
         'status.ok_prefix': '✅ 課程資料最後更新：',
@@ -162,12 +175,12 @@
       en: {
         'play_button.play': 'Click To Play Gong<br />▶️',
         'play_button.stop': 'Click To Stop Gong<br/>⏹️',
-        'audio.unlock_prompt': 'Tap anywhere to enable sound 🔓',
+        'audio.unlock_prompt': 'Tap here to enable sound (no gong will play) 🔓',
         'audio.unlocked': 'Audio unlocked! 🔊',
         'audio.recovering': 'Restoring audio…',
         'audio.reconnected': 'Audio restored! 🔊',
-        'audio.reconnect_prompt': 'Browser returned from the background. Tap to re-enable sound 🔓',
-        'audio.action_required': '⚠️ Sound is not enabled. Tap the screen now.',
+        'audio.reconnect_prompt': 'Browser returned from the background. Tap here to re-enable sound (no gong will play) 🔓',
+        'audio.action_required': '⚠️ Sound is not enabled. Tap here now (no gong will play).',
         'audio.next_bell_prefix': 'Next bell: ',
         'status.checking': '💓 Checking...',
         'status.ok_prefix': '✅ Last data update: ',
@@ -260,7 +273,7 @@
       <button id="lang-btn" class="tool-btn" data-i18n-title="tools.lang_toggle" title="切換語言">🌐</button>
       <button id="tools-btn" class="tool-btn" data-i18n-title="tools.show_debug" title="顯示 Debug Log">🔎</button>
     </div>
-    <div id="audio-unlock" class="status" data-i18n="audio.unlock_prompt">請點擊畫面以啟用鐘聲🔓</div>
+    <button id="audio-unlock" type="button" class="status" data-i18n="audio.unlock_prompt" aria-live="polite">點此啟用鐘聲（不會敲鐘）🔓</button>
     <div id="debug-log" style="display:none; max-height:200px; overflow:auto; margin-bottom:12px; border-radius:6px;">
       <div class="debug-header">
         <span id="debug-title" style="font-weight:600;">Debug Log</span>
@@ -505,7 +518,14 @@
         unlockAudio({ forceRecovery: audioNeedsRecovery || contextNeedsResume }).catch(() => { });
       }
     }
-    window.addEventListener('touchstart', retryAudioOnGesture, { passive: true });
+    function unlockAudioFromPrompt(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      retryAudioOnGesture();
+    }
+    audioUnlockDiv.addEventListener('touchend', unlockAudioFromPrompt, { passive: false });
+    audioUnlockDiv.addEventListener('click', unlockAudioFromPrompt);
+    window.addEventListener('touchend', retryAudioOnGesture, { passive: true });
     window.addEventListener('click', retryAudioOnGesture);
 
     async function ensureAudioUnlocked() {
